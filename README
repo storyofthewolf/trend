@@ -1,0 +1,5 @@
+trend
+
+This family of scripts allows one to produce time-series outputs of CAM or
+ExoCAM simulations where data is output as a montly mean outputs.  This
+package is used to determine model convergence and residual trends.

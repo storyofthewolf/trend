@@ -1,0 +1,13 @@
+TS FLNT FSNT FLNS FSNS LHFLX SHFLX
+Tsfc fhocn flat qi qs hi hs vicen005
+[land model variables go here]
+
+# 1st line is the variables to be read form .cam.h0.
+# 2nd line is the variables to be read from cice.h
+# 3rd line is the variables to be read from clm.h0
+# string types separated by spaces
+# lon, lat, lev, time are implicitly included and always read
+# 
+# only 2D variables are supported.  Easily can add 3d functioning, but would
+# either need to check the variable list and reorded into [2D,3D], or simply
+# make a seperate list here.  (i.e. 1st line is cam.h0 2D, 2nd line is cam.h0 3D
