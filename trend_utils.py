@@ -42,11 +42,17 @@ def print2screen(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope
     if (i >= 10000):  istr = ''
 
     if (do_atm == True): 
-        p1 = [vavg_vecA[4], intavg1_vecA[4], intavg2_vecA[4]]  # temperatures
-        p2 = [slope_intavg2_vecA[1], slope_intavg2_vecA[4]]    # temperature time derivatives
-        v1 = intavg2_vecA[6]-intavg2_vecA[5]                   # TOA energy balance
-        v2 = intavg2_vecA[8]-intavg2_vecA[7] - intavg2_vecA[9] - intavg2_vecA[10] #Surface Energy Balance
-        print(istr, i, "{:.3f} {:.3f} {:.3f}".format(*p1), v1, v2)
+        # Mean surface temperature and time averages
+        p1 = [vavg_vecA[4], intavg1_vecA[4], intavg2_vecA[4]]  
+        # Mean surface temperature time derivatives
+        p2 = [slope_intavg1_vecA[4], slope_intavg2_vecA[4]]
+        # TOA energy balance and Surface energy balance                                    
+        p3 = [ (intavg2_vecA[6]-intavg2_vecA[5]), \
+                intavg2_vecA[8]-intavg2_vecA[7] - intavg2_vecA[9] - intavg2_vecA[10] ]
+        print(istr, i, "{:.3f} {:.3f} {:.3f}".format(*p1), \
+                       "{:.3f} {:.3f}".format(*p2), \
+                       "{:.3f} {:.3f}".format(*p3) )
+
 
     if (do_ice == True):
         p1 = intavg2_vecI[1]   # temperatures
@@ -118,7 +124,7 @@ def timeSeriesPlots(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, sl
     if (do_atm == True):
         print("Entering atmosphere model plot sequence...")
          
-        ##### Temperatures Plots #####
+        ##### Temperature Plot #####
         # Define the x and y data
         x    = time_vecA[a]
         var1 = vavg_vecA[a,4]    ; var1 = np.squeeze(var1)
@@ -152,15 +158,15 @@ def timeSeriesPlots(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, sl
         outfile = "plots/" + case_id +"_" + firstDate + "-" + lastDate + "_TS.eps"    
         plt.savefig(outfile)
 
-        ##### Temperature Plot #####
+        ##### Temperature Slope Plot #####
         # Define the x and y data
         x    = time_vecA[a]
-        var1 = slope_intavg1_vecA[a,4] ; var1 = np.squeeze(var2)
-        var2 = slope_intavg2_vecA[a,4] ; var2 = np.squeeze(var3)
+        var1 = slope_intavg1_vecA[a,4] ; var1 = np.squeeze(var1)
+        var2 = slope_intavg2_vecA[a,4] ; var2 = np.squeeze(var2)
 
-        auto_t_bound = True
-        y1=-0.2
-        y2=0.2
+        auto_t_bound = False
+        y1=-10
+        y2=10
         a=np.squeeze(a)
         na = len(a)-1
         if auto_t_bound == True:
@@ -169,7 +175,7 @@ def timeSeriesPlots(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, sl
 
         # Create the plot
         print('    creating temperature slopes time series plot')
-        plt.plot(x, var2, linestyle='-', color='g', label='T slope int1')
+        plt.plot(x, var1, linestyle='-', color='g', label='T slope int1')
         plt.plot(x, var2, linestyle='-', color='r', label='T slope int2')
         plt.xlim([np.min(x), np.max(x)])
         plt.ylim([y1, y2])
@@ -193,8 +199,8 @@ def timeSeriesPlots(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, sl
         var3 = np.squeeze(var3)
         var4 = np.squeeze(var4)
 
-        y1=-3
-        y2=1
+        y1=-5
+        y2=5
         # Create the plot
         print('    creating net flux time series plot')
         plt.plot(x, var1, linestyle='-' , color='b', label='LW')

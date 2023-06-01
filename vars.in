@@ -8,6 +8,7 @@ Tsfc fhocn flat qi qs hi hs vicen005
 # string types separated by spaces
 # lon, lat, lev, time are implicitly included and always read
 # 
-# only 2D variables are supported.  Easily can add 3d functioning, but would
-# either need to check the variable list and reorded into [2D,3D], or simply
-# make a seperate list here.  (i.e. 1st line is cam.h0 2D, 2nd line is cam.h0 3D
+# As of June 1, 2023. only 2D variables are supported. Most quantities of
+# interest are 2D (surface temperature, TOA energy balance, etc). I will 
+# eventually add option for read in full 3D variables when the utility of ush
+# is requested or becomes self-evident.

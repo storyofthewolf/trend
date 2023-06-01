@@ -29,7 +29,7 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('case_id'     , type=str,   nargs=1, default=' ',  help='Set simulation time series case name')
-parser.add_argument('-y'          , type=float, default='1', help='Start year over which to loop timeseries')
+parser.add_argument('-y'          , type=float, default='1', help='Start year over which to begin timeseries')
 parser.add_argument('-n'          , type=int,   default='6000', help='Number of months to integrate over')
 parser.add_argument('-p'          , type=int,   default='10', help='Interval for screen output, in number of months')
 parser.add_argument('--cam',        action='store_true', help='read atmosphere model data')

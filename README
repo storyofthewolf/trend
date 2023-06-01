@@ -1,5 +1,51 @@
 trend
+------------------------------------------------------------------------------
 
 This family of scripts allows one to produce time-series outputs of CAM or
-ExoCAM simulations where data is output as a montly mean outputs.  This
-package is used to determine model convergence and residual trends.
+ExoCAM simulations from model outputs produced on a montly mean cadence.  
+This primary use of this package is to determine model convergence characteristics 
+and diagnose any residual trends.  The model assumes your directory structure
+is set up in accordance with NCAR standards, $RUNDIR and $DOUT_S_ROOT (i.e. the
+archive directory).
+
+Requires exocampy_tools.py from ExoCAM/tools/py_progs
+
+contains
+------------------------------------------------------------------------------
+trend.py         -- main program
+trend_utils.py   -- contains functions for printing and plotting data
+vars.in          -- contains lists of the variables to read in from
+                    atmosphere, ice, and land model respectively
+
+usage
+------------------------------------------------------------------------------
+usage: trend.py [-h] [-y Y] [-n N] [-p P] [--cam] [--cice] [--clm] [--rundir]
+                [--noplots] [--print2data]
+                case_id
+
+positional arguments:
+  case_id       Set simulation time series case name
+
+optional arguments:
+  -h, --help    show this help message and exit
+  -y Y          Start year over which to begin timeseries;  default = year 1
+  -n N          Number of months to integrate over;  defualt = run for all files present
+  -p P          Interval for screen output, in number of months;  default = 10 months
+  --cam         do read atmosphere model data
+  --cice        do read sea ice model data
+  --clm         do read land model data
+  --rundir      do read files from run directory instead of archive directory (default)
+  --noplots     do not produce lineplots at end of sequence
+  --print2data  do print data to a text file
+
+
+example
+------------------------------------------------------------------------------
+>> python trend.py $my_case_name --cam -p 100 -y 10
+
+result:
+produces time-series from run titled "$my_case_name"
+reads the atmosphere model files only "cam.h0"  (variables defined in vars.in)
+starts at date  0010-01
+prints to screen once every 100 model months
+plots data to screen and eps at the end of time-series
