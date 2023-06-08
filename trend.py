@@ -59,7 +59,7 @@ prefixI = '.cice.h.'
 do_atm = False 
 do_ice = False 
 do_lnd = False 
-if args.cam: do_atm = True
+if args.cam:  do_atm = True
 if args.cice: do_ice = True
 if args.clm:  do_lnd = True
 
@@ -264,14 +264,14 @@ while True:
         time_vecA[i] = it
     if do_lnd == True:
         file_present = os.path.isfile(file_lnd)
-        if file_present == 0:
+        if file_present == False:
             lastDate = str(year) + '-' + month
             print("Date of last data read =", lastDate)
             break
         time_vecL[i] = it
     if do_ice == True:
         file_present = os.path.isfile(file_ice)
-        if file_present == 0:
+        if file_present == False:
             lastDate = str(year) + '-' + month
             print("Date of last data read =", lastDate)
             break
