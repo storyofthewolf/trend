@@ -17,7 +17,6 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 import netCDF4 as nc
 import numpy   as np
 import os
@@ -27,6 +26,7 @@ import trend_utils as trend
 import argparse
 import sys
 
+# input arguments and options
 parser = argparse.ArgumentParser()
 parser.add_argument('case_id'     , type=str,   nargs=1, default=' ',  help='Set simulation time series case name')
 parser.add_argument('-y'          , type=float, default='1', help='Start year over which to begin timeseries')
@@ -78,17 +78,22 @@ print_int = int(args.p)
 
 
 # Select variables to read
-
-# modularize into packages, "2D energy", "Surface Ice", "T-structure"
+# Currently variables are read in from vars.in.  While read in and averaging are indepedent of the list order, 
+# print, plotting, and analysis are dependent on the array indices of quantities of interest.When modifying the 
+# input variable lists, the user must be cognizant of array indices versus analysis, plotting, and print outputs.
+#
+# Possible Future work could create modularized  packages that focus on relevant physics
+# e.g. "2D energy balance", "Surface Ice", "Temperature-structure"
 # packages would include vars.in --> screen_outputs ---> plots, printing
-#    all correlated for the package variables.  then there would be a custom option.
-#    packages (2D energy) T, Tavg, net TOA, net Surface, dT/dt, dF/dt
-
+# all correlated for the package variables.  then there would be a custom option.
+# packages (2D energy) T, Tavg, net TOA, net Surface, dT/dt, dF/dt
+#
 
 # read variables strings from namelist file
 atmvars_in, icevars_in = trend.read_request_var(do_atm, do_ice)
 
 # data from atmosphere model
+# include standard quartet of time and space indexes
 group1d = ['time', 'lon','lat','lev']
 group2d = atmvars_in
 nv1dA   = len(group1d)
