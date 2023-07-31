@@ -1,8 +1,22 @@
-TS FLNT FSNT FLNS FSNS LHFLX SHFLX
+// input fields -- fields read in from netcdf files //
+TS FLNT FSNT FLNS FSNS LHFLX SHFLX ICEFRAC
 Tsfc fhocn flat qi qs hi hs vicen005
-[land model variables go here]
+TG 
+// output fields -- output to screen //
+TS ICEFRAC energy
+Tsfc
+TG
+// create plots //
+TS
+Tsfc
+TG
 
-# 1st line is the variables to be read form .cam.h0.
+###################################################################
+# First block describes the variables read from netcdf
+# Second block sets the variables to write to screen
+# Third block sets the variavles to plot
+#     within each block...
+# 1st line is the variables to be read form cam.h0
 # 2nd line is the variables to be read from cice.h
 # 3rd line is the variables to be read from clm.h0
 # string types separated by spaces
@@ -12,3 +26,5 @@ Tsfc fhocn flat qi qs hi hs vicen005
 # interest are 2D (surface temperature, TOA energy balance, etc). I will 
 # eventually add option for read in full 3D variables when the utility of ush
 # is requested or becomes self-evident.
+
+

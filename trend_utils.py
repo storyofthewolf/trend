@@ -1,13 +1,19 @@
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # trend_utils.py
 #
+#  Author: Wolf, E.T.
 #
+#  Contains functions for reading namelist (vars.in), 
+#  screen output, text outputs, and runtime plotting
 #
-#  Contains functions for inputs, outputs, and basic plotting
-#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
+
+vars_offset = 4 
+print_offset = 0
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -16,23 +22,56 @@ import numpy as np
 # names requeted from the models.  lon, lat, lev, time ar always included and thus hardcoded.
 # file out one formated text file. atm, lnd, ice
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def read_request_var(do_atm, do_ice):
+def read_request_var():
 
     with open('vars.in', 'r') as f:
-        atmstr = f.readline()
-        atmvars= atmstr.split()
-        icestr = f.readline()
-        icevars= icestr.split()
+        blank1   = f.readline()
+        atmRstr  = f.readline()
+        atmRvars = atmRstr.split()
+        iceRstr  = f.readline()
+        iceRvars = iceRstr.split()
+        lndRstr  = f.readline()
+        lndRvars = lndRstr.split()
 
-    return atmvars, icevars
+        blank2   = f.readline()
+        atmPstr  = f.readline()
+        atmPvars = atmPstr.split()
+        icePstr  = f.readline()
+        icePvars = icePstr.split()
+        lndPstr  = f.readline()
+        lndPvars = lndPstr.split()
+
+        blank3    = f.readline()
+        atmPLstr  = f.readline()
+        atmPLvars = atmPLstr.split()
+        icePLstr  = f.readline()
+        icePLvars = icePLstr.split()
+        lndPLstr  = f.readline()
+        lndPLvars = lndPLstr.split()
+
+        for var in atmPvars:
+            if (var != 'energy'):
+                indexr = np.where(np.array(atmRvars) == var)[0]
+                if (indexr >= 0):
+                    pass
+                else:
+                    print("ERROR: ",var, " requested to print, not on variable list")
+                    sys.exit()
+
+
+    return atmRvars, iceRvars, lndRvars, atmPvars, icePvars, lndPvars, atmPLvars, icePLvars, lndPLvars
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # // print2screen //
 # prints text to screen for running output
 # not saved
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def print2screen(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
-                 do_ice, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI, slope_intavg1_vecI, slope_intavg2_vecI, i):
+def print2screen(atmvars_in, lndvars_in, icevars_in, atmprint_in, lndprint_in, iceprint_in, firstCall, \
+                 do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
+                 do_ice, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI, slope_intavg1_vecI, slope_intavg2_vecI, \
+                 do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
+                 i):
 
     i=i+1
     if (i <  10): istr = '    '
@@ -41,17 +80,58 @@ def print2screen(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope
     if (i >= 1000):  istr = ' '
     if (i >= 10000):  istr = ''
 
+    # contains all data read in
+    atmout       = np.zeros(1, dtype=int)  
+    # contains only the data to print to screen
+    atmprint_out = np.zeros(1, dtype=int)  
+
     if (do_atm == True): 
-        # Mean surface temperature and time averages
-        p1 = [vavg_vecA[4], intavg1_vecA[4], intavg2_vecA[4]]  
-        # Mean surface temperature time derivatives
-        p2 = [slope_intavg1_vecA[4], slope_intavg2_vecA[4]]
-        # TOA energy balance and Surface energy balance                                    
-        p3 = [ (intavg2_vecA[6]-intavg2_vecA[5]), \
-                intavg2_vecA[8]-intavg2_vecA[7] - intavg2_vecA[9] - intavg2_vecA[10] ]
-        print(istr, i, "{:.3f} {:.3f} {:.3f}".format(*p1), \
-                       "{:.3f} {:.3f}".format(*p2), \
-                       "{:.3f} {:.3f}".format(*p3) )
+
+        # include everything else in a general loop
+        for var in atmprint_in:
+            if (var != 'energy'): 
+                indexr = np.where(np.array(atmvars_in) == var)[0]
+                if (indexr >= 0):
+                    xi = indexr + vars_offset
+                    temp = np.array([vavg_vecA[xi], intavg1_vecA[xi], intavg2_vecA[xi]])
+                    temp = np.squeeze(temp)
+                    atmout[0] = i
+                    atmout = np.hstack((atmout, temp)).flatten()
+                    atmout = np.squeeze(atmout)
+
+        # energy goes at the end
+        value_to_find = 'energy'
+        indexr = np.where(np.array(atmprint_in) == value_to_find)[0]
+        if (indexr > 0):
+            N = len(vavg_vecA)
+            xi = N-1
+            temp = np.array([vavg_vecA[xi], intavg1_vecA[xi], intavg2_vecA[xi]])
+            temp = np.squeeze(temp)
+            atmout = np.hstack((atmout, temp)).flatten()
+            atmout = np.squeeze(atmout)
+            xi = N-2
+            temp = np.array([vavg_vecA[xi], intavg1_vecA[xi], intavg2_vecA[xi]])
+            temp = np.squeeze(temp)
+            atmout = np.hstack((atmout, temp)).flatten()
+            atmout = np.squeeze(atmout)       
+
+        if (firstCall == True):                  
+            format_string = "{%s}"
+            print("i  ", end=' ',flush=True)
+            for x in atmprint_in:
+                print(x, end=' ',flush=True)
+            print()        
+         
+        # Define the desired formatting
+        format_string = "{:.2f}"
+        
+        print(int(atmout[0]), end='  ',flush=True)
+        N=len(atmout)
+        for x in range(int((N-1)/3)):
+            y=int(3*(x+1)-print_offset)
+            print(format_string.format(atmout[y]), end='  ',flush=True)
+        print()
+
 
 
     if (do_ice == True):
@@ -67,7 +147,7 @@ def print2screen(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope
         print(istr, i, p1, p2, p3, p6, p7, p8, p9)
 
     return
-
+ 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # // print2text //
@@ -78,7 +158,7 @@ def print2text(do_atm, vnamesA, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA
                firstDate, lastDate, case_id):
 
     a = np.where(time_vecA != 0)
-    a=np.squeeze(a)
+    a = np.squeeze(a)
     na = len(a)-1
 
     outfile = "data/" + case_id +"_" + firstDate + "-" + lastDate + "_cam.txt"
@@ -95,6 +175,7 @@ def print2text(do_atm, vnamesA, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA
             for i in time_vecI[0:na]:
                i=int(i)
                print(i, vavg_vecI[i,4], file=f)
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # // timeSeriesPlots //
@@ -159,31 +240,31 @@ def timeSeriesPlots(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, sl
         plt.savefig(outfile)
 
         ##### Temperature Slope Plot #####
-        # Define the x and y data
-        x    = time_vecA[a]
-        var1 = slope_intavg1_vecA[a,4] ; var1 = np.squeeze(var1)
-        var2 = slope_intavg2_vecA[a,4] ; var2 = np.squeeze(var2)
-
-        auto_t_bound = False
-        y1=-10
-        y2=10
-        a=np.squeeze(a)
-        na = len(a)-1
-        if auto_t_bound == True:
-            y1 = min(slope_intavg1_vecA[0:na, 4]) * 0.98
-            y2 = max(slope_intavg2_vecA[0:na, 4]) * 1.02
-
-        # Create the plot
-        print('    creating temperature slopes time series plot')
-        plt.plot(x, var1, linestyle='-', color='g', label='T slope int1')
-        plt.plot(x, var2, linestyle='-', color='r', label='T slope int2')
-        plt.xlim([np.min(x), np.max(x)])
-        plt.ylim([y1, y2])
-        plt.title('Temperatures Slopes')
-        plt.legend()
-        plt.show()
-        outfile = "plots/" + case_id +"_" + firstDate + "-" + lastDate + "_TS.eps"    
-        plt.savefig(outfile)
+#        # Define the x and y data
+#        x    = time_vecA[a]
+#        var1 = slope_intavg1_vecA[a,4] ; var1 = np.squeeze(var1)
+#        var2 = slope_intavg2_vecA[a,4] ; var2 = np.squeeze(var2)
+#
+#        auto_t_bound = False
+#        y1=-10
+#        y2=10
+#        a=np.squeeze(a)
+#        na = len(a)-1
+#        if auto_t_bound == True:
+#            y1 = min(slope_intavg1_vecA[0:na, 4]) * 0.98
+#            y2 = max(slope_intavg2_vecA[0:na, 4]) * 1.02
+#
+#        # Create the plot
+#        print('    creating temperature slopes time series plot')
+#        plt.plot(x, var1, linestyle='-', color='g', label='T slope int1')
+#        plt.plot(x, var2, linestyle='-', color='r', label='T slope int2')
+#        plt.xlim([np.min(x), np.max(x)])
+#        plt.ylim([y1, y2])
+#        plt.title('Temperatures Slopes')
+#        plt.legend()
+#        plt.show()
+#        outfile = "plots/" + case_id +"_" + firstDate + "-" + lastDate + "_TS.eps"    
+#        plt.savefig(outfile)
 
 
         ##### Flux Plot #####
@@ -244,3 +325,48 @@ def timeSeriesPlots(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, sl
         plt.title('Ice Sheet Energy')
         plt.legend()
         plt.show()
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# // atm_energy_calc //
+# calculate atmosphere model energy balance from primary vars
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def atm_energy_calc(atmvars, vavg_vecA):
+
+    value_to_find = 'FSNT'
+    indexr = np.where(np.array(atmvars) == value_to_find)[0]
+    xfsnt = indexr + vars_offset
+    if len(indexr) == 0: print("Error: FSNT required for energy calc")
+
+    value_to_find = 'FLNT'
+    indexr = np.where(np.array(atmvars) == value_to_find)[0]
+    xflnt = indexr + vars_offset
+    if len(indexr) == 0: print("Error: FLNT required for energy calc")
+
+    value_to_find = 'FSNS'
+    indexr = np.where(np.array(atmvars) == value_to_find)[0]
+    xfsns = indexr + vars_offset
+    if len(indexr) == 0: print("Error: FSNS required for energy calc")
+
+    value_to_find = 'FLNS'
+    indexr = np.where(np.array(atmvars) == value_to_find)[0]
+    xflns = indexr + vars_offset
+    if len(indexr) == 0: print("Error: FLNS required for energy calc")
+
+    value_to_find = 'LHFLX'
+    indexr = np.where(np.array(atmvars) == value_to_find)[0]
+    xlhflx = indexr + vars_offset
+    if len(indexr) == 0: print("Error: LHFLX required for energy calc")
+
+    value_to_find = 'SHFLX'
+    indexr = np.where(np.array(atmvars) == value_to_find)[0]
+    xshflx = indexr + vars_offset
+    if len(indexr) == 0: print("Error: SHFLX required for energy calc")
+
+    etop = np.array( [vavg_vecA[xfsnt]-vavg_vecA[xflnt] ])
+    etop = np.squeeze(etop)
+
+    ebot = np.array( [vavg_vecA[xfsns]-vavg_vecA[xflns] - vavg_vecA[xlhflx] - vavg_vecA[xshflx] ])
+    ebot = np.squeeze(ebot)
+  
+    return etop, ebot
