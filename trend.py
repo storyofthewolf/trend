@@ -48,6 +48,8 @@ NT          = int(args.n)
 read_rundir   = False
 if args.rundir:  read_rundir = args.rundir
 
+# the root path to your working directory
+
 dir = '/gpfsm/dnb53/etwolf/cesm_scratch/'
 
 # model prefixs
@@ -219,24 +221,18 @@ if do_atm == True:
     print(atmvars_in)
     print("atmosphere print variables")
     print(atmprint_in)
-    #print(nv2dA, nv1dA, nvtotA)
-    #print(vnamesA)
 
 if do_ice == True:
     print("ice model variables")
     print(icevars_in)
     print("ice print variables")
     print(iceprint_in)
-    #print(nv2dI, nv1dI, nvtotI)
-    #print(vnamesI)
 
 if do_lnd == True:
     print("land model variables")
     print(lndvars_in)
     print("land print variables")
     print(lndprint_in)
-    #print(nv2dL, nv1dL, nvtotL)
-    #print(vnamesL)
 
 print("=== Resolution ===");
 print("nlon  ", nlon)
@@ -433,10 +429,10 @@ if args.data == True:
 #-------------------------------------------------------
 if args.plots == True:
   print('Plotting...')
-  trend.timeSeriesPlots(do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
+  trend.timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, iceplot_in, \
+                        do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
                         do_ice, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI, slope_intavg1_vecI, slope_intavg2_vecI, \
+                        do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
                         firstDate, lastDate, case_id)
 
-
-
-
+sys.exit()
