@@ -248,10 +248,10 @@ print("========================================")
 firstPrintCall = True
 i=0
 while True:
+
     if (i == NT):
         # Exit loop if equals specified length
         lastDate = str(year) + '-' + month
-        print("Date of last data read =", lastDate)
         break
 
     it = i + 1
@@ -282,21 +282,18 @@ while True:
         file_present = os.path.isfile(file_atm)
         if file_present == False:
             lastDate = str(year) + '-' + month
-            print("Date of last data read =", lastDate)
             break
         time_vecA[i] = it
     if do_ice == True:
         file_present = os.path.isfile(file_ice)
         if file_present == False:
             lastDate = str(year) + '-' + month
-            print("Date of last data read =", lastDate)
             break
         time_vecI[i] = it
     if do_lnd == True:
         file_present = os.path.isfile(file_lnd)
         if file_present == False:
             lastDate = str(year) + '-' + month
-            print("Date of last data read =", lastDate)
             break
         time_vecL[i] = it
     if i == 0:
@@ -409,10 +406,8 @@ while True:
 #-----------------------------------------------------------------------------------------------------------------
 # end loop over files
 #-----------------------------------------------------------------------------------------------------------------
-print("Last files read: ")
-if (do_atm == True): print(file_atm)
-if (do_ice == True): print(file_ice)
-if (do_lnd == True): print(file_lnd)
+print("Number of files read:  ", i)
+print("End date (year-month): ", lastDate)
 
 
 #------------------------------------------------------

@@ -262,20 +262,51 @@ def print2text(atmvars_in, lndvars_in, icevars_in, atmprint_in, lndprint_in, ice
     a = np.squeeze(a)
     na = len(a)-1
 
-    outfile = "data/" + case_id +"_" + firstDate + "-" + lastDate + "_cam.txt"
     if (do_atm == True):
-        with open(outfile,"w") as f:
-            for i in time_vecA[0:na]:
-               i=int(i)
-               print(i, vavg_vecA[i,4], file=f)
+        outfile = "data/" + case_id +"_" + firstDate + "-" + lastDate + "_cam.txt"
+        if (do_atm == True):
+            with open(outfile,"w") as f:
+                for i in time_vecA[0:na]:
+                    i=int(i)
+                    # sort out printing variables
+                    print(i, vavg_vecA[i,4], file=f)
 
 
-    outfile = "data/" + case_id +"_" + firstDate + "-" + lastDate + "_cice.txt"
+
+#if (firstCall == True):
+#            format_string = "{%s}"
+#            print("i  ", end=' ',flush=True)
+#            for x in atmprint_in:
+#                print(x, end=' ',flush=True)
+#            print()
+#
+#        # Define the desired formatting
+#
+#        format_string = "{:.3f}"
+#
+#        print(int(atmout[0]), end='  ',flush=True)
+#        N=len(atmout)
+#        for x in range(int((N-1)/3)):
+#            y=int(3*(x+1)-print_offset)
+#            print(format_string.format(atmout[y]), end='  ',flush=True)
+#        print()
+#
+
+
+#  for var in atmprint_in:
+#            if (var != 'energy'):
+#                indexr = np.where(np.array(atmvars_in) == var)[0]
+#                if (indexr >= 0):
+#                    xi = indexr + vars_offset
+
+
     if (do_ice == True):
-        with open(outfile,"w") as f:
-            for i in time_vecI[0:na]:
-               i=int(i)
-               print(i, vavg_vecI[i,4], file=f)
+        outfile = "data/" + case_id +"_" + firstDate + "-" + lastDate + "_cice.txt"
+        if (do_ice == True):
+            with open(outfile,"w") as f:
+                for i in time_vecI[0:na]:
+                    i=int(i)
+                    print(i, vavg_vecI[i,4], file=f)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -287,7 +318,7 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                     do_ice, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI, slope_intavg1_vecI, slope_intavg2_vecI, \
                     do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
                     firstDate, lastDate, case_id):
-
+#!! routine is incomplete !!
 
     if (do_atm == True):
         print("Entering atmosphere model plot sequence...")
@@ -308,16 +339,16 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                     var3 = intavg2_vecA[a,xa] ; var3 = np.squeeze(var3)
 
                     if auto_t_bound == True:
-                        if vavg_vecA[0, xa] > vavg_vecA[na, 4]:
+                        if intavg2_vecA[0, xa] > intavg2_vecA[na, 4]:
                         # decreasing curve
-                            y1 = min(vavg_vecA[0:na, xa]) * 0.98
-                            y2 = min(vavg_vecA[0:na, xa]) * 1.05
+                            y1 = min(intavg2_vecA[0:na, xa]) * 0.98
+                            y2 = min(intavg2_vecA[0:na, xa]) * 1.05
                         elif vavg_vecA[0, xa] <= vavg_vecA[na, xa]:
                         # increasingg curve
-                            y1 = max(vavg_vecA[0:na, xa]) * 0.95
-                            y2 = max(vavg_vecA[0:na, xa]) * 1.02
-
-                    plt.plot(x, var1, linestyle='-', color='b', label='insta')
+                            y1 = max(intavg2_vecA[0:na, xa]) * 0.95
+                            y2 = max(intavg2_vecA[0:na, xa]) * 1.02
+                    print("y1,y2: ", y1,y2)
+                    plt.plot(x, var1, linestyle='-', color='b', label='monthly avg')
                     plt.plot(x, var2, linestyle='-', color='g', label='1 year avg')
                     plt.plot(x, var3, linestyle='-', color='r', label='10 year avg')
                     plt.xlim([np.min(x), np.max(x)])
@@ -328,21 +359,20 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
 
             # energy balance is a special case
             if (var == 'energy'):
-                N = len(vavg_vecA[0,:])
-                xa = N-1
                 x    = time_vecA[a]
+                N = len(vavg_vecA[0,:])
+                xa = N-1                
                 var1 = vavg_vecA[a,xa]    ; var1 = np.squeeze(var1)
                 var2 = intavg1_vecA[a,xa] ; var2 = np.squeeze(var2)
                 var3 = intavg2_vecA[a,xa] ; var3 = np.squeeze(var3)
                 xa = N-2
-                x    = time_vecA[a]
-                var4 = vavg_vecA[a,xa]    ; var1 = np.squeeze(var4)
-                var5 = intavg1_vecA[a,xa] ; var2 = np.squeeze(var5)
-                var6 = intavg2_vecA[a,xa] ; var3 = np.squeeze(var6)
+                var4 = vavg_vecA[a,xa]    ; var4 = np.squeeze(var4)
+                var5 = intavg1_vecA[a,xa] ; var5 = np.squeeze(var5)
+                var6 = intavg2_vecA[a,xa] ; var6 = np.squeeze(var6)
 
                 if auto_t_bound == True:
-                    fac = vavg_vecA[na, xa]/vavg_vecA[0, xa]
-                    if vavg_vecA[0, xa] > vavg_vecA[na, xa]:
+                    fac = intavg2_vecA[na, xa]/intavg2_vecA[0, xa]
+                    if intavg2_vecA[0, xa] > intavg2_vecA[na, xa]:
                     # decreasing curve
                         y1 = min(vavg_vecA[0:na, xa]) 
                         y2 = max(vavg_vecA[0:na, xa])*fac
@@ -355,13 +385,13 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                        y1 = min(vavg_vecA[0:na, xa])
                        y2 = max(vavg_vecA[0:na, xa])
 
-                plt.plot(x, var1, linestyle='-', color='b', label='insta')
+                plt.plot(x, var1, linestyle='-', color='b', label='monthly avg')
                 plt.plot(x, var2, linestyle='-', color='g', label='1 year avg')
                 plt.plot(x, var3, linestyle='-', color='r', label='10 year avg')
 
-                plt.plot(x, var4, linestyle='-', color='b', label='insta')
-                plt.plot(x, var5, linestyle='-', color='g', label='1 year avg')
-                plt.plot(x, var6, linestyle='-', color='r', label='10 year avg')
+                plt.plot(x, var4, linestyle='--', color='b', label='monthly avg')
+                plt.plot(x, var5, linestyle='--', color='g', label='1 year avg')
+                plt.plot(x, var6, linestyle='--', color='r', label='10 year avg')
 
                 plt.xlim([np.min(x), np.max(x)])
                 plt.ylim([y1, y2])

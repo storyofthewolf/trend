@@ -3,4 +3,5 @@ plots/*.eps
 __pycache__
 accelerate.py
 trend_plot.py
+trend_rocke.py
 *~
