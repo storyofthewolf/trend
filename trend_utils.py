@@ -343,7 +343,7 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                         # decreasing curve
                             y1 = min(intavg2_vecA[0:na, xa]) * 0.98
                             y2 = min(intavg2_vecA[0:na, xa]) * 1.05
-                        elif vavg_vecA[0, xa] <= vavg_vecA[na, xa]:
+                        elif intavg2_vecA[0, xa] <= intavg2_vecA[na, xa]:
                         # increasingg curve
                             y1 = max(intavg2_vecA[0:na, xa]) * 0.95
                             y2 = max(intavg2_vecA[0:na, xa]) * 1.02
