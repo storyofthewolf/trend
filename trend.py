@@ -24,7 +24,6 @@ import sys
 import exocampy_tools  as exo
 import trend_utils as trend
 import argparse
-import sys
 
 # input arguments and options
 parser = argparse.ArgumentParser()
@@ -32,6 +31,7 @@ parser.add_argument('case_id'     , type=str,   nargs=1, default=' ',  help='Set
 parser.add_argument('-y'          , type=int,   default='1', help='Start year over which to begin timeseries')
 parser.add_argument('-n'          , type=int,   default='6000', help='Number of months to integrate over')
 parser.add_argument('-p'          , type=int,   default='10', help='Interval for screen output, in number of months')
+parser.add_argument('-a'          , type=int,   default='2',  help='Average frequency for screen output, 0:monthly, 1:yearly, 2:decadal')
 parser.add_argument('--cam',        action='store_true', help='read atmosphere model data')
 parser.add_argument('--cice',       action='store_true', help='read sea ice model data')
 parser.add_argument('--clm',        action='store_true', help='read land model data')
@@ -44,6 +44,9 @@ args = parser.parse_args()
 case_id     = str(args.case_id[0])
 START_YEAR  = int(args.y)
 NT          = int(args.n)
+
+# averaging interval for output
+avgfreq     = int(args.a)
 
 read_rundir   = False
 if args.rundir:  read_rundir = args.rundir
@@ -307,20 +310,23 @@ while True:
     if do_atm == True:
         ncid = nc.Dataset(file_atm, 'r')
         for n in range(nv1dA, nv1dA + nv2dA):
-            temp2D = ncid[vnamesA[n]][:]
-            v2dA[n,:,:] = temp2D[0,:,:]
+            if vnamesA[n] in ncid.variables:
+                temp2D = ncid[vnamesA[n]][:]
+                v2dA[n,:,:] = temp2D[0,:,:]
         ncid.close()
     if do_ice == True:
         ncid = nc.Dataset(file_ice, 'r')
         for n in range(nv1dI, nv1dI + nv2dI):
-            temp2D = ncid[vnamesI[n]][:]
-            v2dI[n,:,:] = temp2D[0,:,:]
+            if vnamesI[n] in ncid.variables:
+                temp2D = ncid[vnamesI[n]][:]
+                v2dI[n,:,:] = temp2D[0,:,:]
         ncid.close()
     if do_lnd == True:
         ncid = nc.Dataset(file_lnd, 'r')
         for n in range(nv1dL, nv1dL + nv2dL):
-            temp2D = ncid[vnamesL[n]][:]
-            v2dL[n,:,:] = temp2D[0,:,:]
+            if vnamesL[n] in ncid.variables:
+                temp2D = ncid[vnamesL[n]][:]
+                v2dL[n,:,:] = temp2D[0,:,:]
         ncid.close()
 
     #------------------------------------------------------
@@ -396,7 +402,7 @@ while True:
     # Print to screen
     #-------------------------------------------------------
     if ((i+1) % print_int == 0):  
-        trend.print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, lndprint_in, firstPrintCall, \
+        trend.print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, lndprint_in, firstPrintCall, avgfreq, \
                            do_atm, time_vecA[i], vavg_vecA[i,:], intavg1_vecA[i,:], intavg2_vecA[i,:], slope_intavg1_vecA[i,:], slope_intavg2_vecA[i,:], \
                            do_ice, time_vecI[i], vavg_vecI[i,:], intavg1_vecI[i,:], intavg2_vecI[i,:], slope_intavg1_vecI[i,:], slope_intavg2_vecI[i,:], \
                            do_lnd, time_vecL[i], vavg_vecL[i,:], intavg1_vecL[i,:], intavg2_vecL[i,:], slope_intavg1_vecL[i,:], slope_intavg2_vecL[i,:], \
@@ -406,6 +412,7 @@ while True:
 #-----------------------------------------------------------------------------------------------------------------
 # end loop over files
 #-----------------------------------------------------------------------------------------------------------------
+print("Concluding             ", case_id)
 print("Number of files read:  ", i)
 print("End date (year-month): ", lastDate)
 

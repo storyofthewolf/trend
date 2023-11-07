@@ -14,8 +14,8 @@ import numpy as np
 
 # global variable settings
 # offset for variable read in. value of 4 for lon, lat, lev, time
-vars_offset = 4 
-print_offset = 0
+atm_vars_offset = 4 
+ice_vars_offset = 1
 auto_t_bound = True
 
 
@@ -118,11 +118,16 @@ def read_request_var():
 # prints text to screen for running output
 # not saved
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def print2screen(atmvars_in, lndvars_in, icevars_in, atmprint_in, lndprint_in, iceprint_in, firstCall, \
+def print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, lndprint_in, firstCall, avgfreq, \
                  do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
                  do_ice, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI, slope_intavg1_vecI, slope_intavg2_vecI, \
                  do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
                  i):
+  
+    print_offset = 0      
+    if (avgfreq == 0): print_offset = 2
+    if (avgfreq == 1): print_offset = 1
+    if (avgfreq == 2): print_offset = 0
 
     i=i+1
     if (i <  10): istr = '    '
@@ -147,7 +152,7 @@ def print2screen(atmvars_in, lndvars_in, icevars_in, atmprint_in, lndprint_in, i
             if (var != 'energy'): 
                 indexr = np.where(np.array(atmvars_in) == var)[0]
                 if (indexr >= 0):
-                    xi = indexr + vars_offset
+                    xi = indexr + atm_vars_offset
                     temp = np.array([vavg_vecA[xi], intavg1_vecA[xi], intavg2_vecA[xi]])
                     temp = np.squeeze(temp)
                     atmout[0] = i
@@ -188,13 +193,14 @@ def print2screen(atmvars_in, lndvars_in, icevars_in, atmprint_in, lndprint_in, i
         print()
 
 
-    if (do_ice == True): 
+    if (do_ice == True):       
+
         # include everything else in a general loop
         for var in iceprint_in:
             if (var != 'energy'): 
                 indexr = np.where(np.array(icevars_in) == var)[0]
                 if (indexr >= 0):
-                    xi = indexr + vars_offset
+                    xi = indexr + ice_vars_offset
                     temp = np.array([vavg_vecI[xi], intavg1_vecI[xi], intavg2_vecI[xi]])
                     temp = np.squeeze(temp)
                     iceout[0] = i
@@ -204,7 +210,7 @@ def print2screen(atmvars_in, lndvars_in, icevars_in, atmprint_in, lndprint_in, i
         if (firstCall == True):
             format_string = "{%s}"
             print("i  ", end=' ',flush=True)
-            for x in lndprint_in:
+            for x in iceprint_in:
                 print(x, end=' ',flush=True)
             print()
 
@@ -339,7 +345,7 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                     var3 = intavg2_vecA[a,xa] ; var3 = np.squeeze(var3)
 
                     if auto_t_bound == True:
-                        if intavg2_vecA[0, xa] > intavg2_vecA[na, 4]:
+                        if intavg2_vecA[0, xa] > intavg2_vecA[na, xa]:
                         # decreasing curve
                             y1 = min(intavg2_vecA[0:na, xa]) * 0.98
                             y2 = min(intavg2_vecA[0:na, xa]) * 1.05
@@ -347,7 +353,6 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                         # increasingg curve
                             y1 = max(intavg2_vecA[0:na, xa]) * 0.95
                             y2 = max(intavg2_vecA[0:na, xa]) * 1.02
-                    print("y1,y2: ", y1,y2)
                     plt.plot(x, var1, linestyle='-', color='b', label='monthly avg')
                     plt.plot(x, var2, linestyle='-', color='g', label='1 year avg')
                     plt.plot(x, var3, linestyle='-', color='r', label='10 year avg')
@@ -370,20 +375,23 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                 var5 = intavg1_vecA[a,xa] ; var5 = np.squeeze(var5)
                 var6 = intavg2_vecA[a,xa] ; var6 = np.squeeze(var6)
 
+                # found some cases where this isn't working propoe
                 if auto_t_bound == True:
                     fac = intavg2_vecA[na, xa]/intavg2_vecA[0, xa]
                     if intavg2_vecA[0, xa] > intavg2_vecA[na, xa]:
                     # decreasing curve
-                        y1 = min(vavg_vecA[0:na, xa]) 
-                        y2 = max(vavg_vecA[0:na, xa])*fac
-                    elif vavg_vecA[0, xa] <= vavg_vecA[na, xa]:
+                        y1 = min(intavg2_vecA[0:na, xa]) 
+                        y2 = max(intavg2_vecA[0:na, xa])*fac
+                    elif intavg2_vecA[0, xa] <= intavg2_vecA[na, xa]:
                     # increasing curve
-                        y1 = min(vavg_vecA[0:na, xa])/fac 
-                        y2 = max(vavg_vecA[0:na, xa])
+                        y1 = min(intavg2_vecA[0:na, xa])/fac 
+                        y2 = max(intavg2_vecA[0:na, xa])
                     else:
                     # neutral curve
-                       y1 = min(vavg_vecA[0:na, xa])
-                       y2 = max(vavg_vecA[0:na, xa])
+                       y1 = min(intavg2_vecA[0:na, xa])
+                       y2 = max(intavg2_vecA[0:na, xa])
+                y1=-3.0
+                y2=3.0
 
                 plt.plot(x, var1, linestyle='-', color='b', label='monthly avg')
                 plt.plot(x, var2, linestyle='-', color='g', label='1 year avg')
