@@ -232,7 +232,7 @@ def print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, l
             if (var != 'energy'): 
                 indexr = np.where(np.array(lndvars_in) == var)[0]
                 if (indexr >= 0):
-                    xi = indexr + vars_offset
+                    xi = indexr + lnd_vars_offset
                     temp = np.array([vavg_vecL[xi], intavg1_vecL[xi], intavg2_vecL[xi]])
                     temp = np.squeeze(temp)
                     lndout[0] = i
@@ -338,7 +338,7 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
             if (var != 'energy'):
                 indexr = np.where(np.array(atmvars_in) == var)[0]
                 if (indexr >= 0):
-                    xa = indexr + vars_offset
+                    xa = indexr + atm_vars_offset
                     x    = time_vecA[a]
                     var1 = vavg_vecA[a,xa]    ; var1 = np.squeeze(var1)
                     var2 = intavg1_vecA[a,xa] ; var2 = np.squeeze(var2)
@@ -417,32 +417,32 @@ def atm_energy_calc(atmvars, vavg_vecA):
 
     value_to_find = 'FSNT'
     indexr = np.where(np.array(atmvars) == value_to_find)[0]
-    xfsnt = indexr + vars_offset
+    xfsnt = indexr + atm_vars_offset
     if len(indexr) == 0: print("Error: FSNT required for energy calc")
 
     value_to_find = 'FLNT'
     indexr = np.where(np.array(atmvars) == value_to_find)[0]
-    xflnt = indexr + vars_offset
+    xflnt = indexr + atm_vars_offset
     if len(indexr) == 0: print("Error: FLNT required for energy calc")
 
     value_to_find = 'FSNS'
     indexr = np.where(np.array(atmvars) == value_to_find)[0]
-    xfsns = indexr + vars_offset
+    xfsns = indexr + atm_vars_offset
     if len(indexr) == 0: print("Error: FSNS required for energy calc")
 
     value_to_find = 'FLNS'
     indexr = np.where(np.array(atmvars) == value_to_find)[0]
-    xflns = indexr + vars_offset
+    xflns = indexr + atm_vars_offset
     if len(indexr) == 0: print("Error: FLNS required for energy calc")
 
     value_to_find = 'LHFLX'
     indexr = np.where(np.array(atmvars) == value_to_find)[0]
-    xlhflx = indexr + vars_offset
+    xlhflx = indexr + atm_vars_offset
     if len(indexr) == 0: print("Error: LHFLX required for energy calc")
 
     value_to_find = 'SHFLX'
     indexr = np.where(np.array(atmvars) == value_to_find)[0]
-    xshflx = indexr + vars_offset
+    xshflx = indexr + atm_vars_offset
     if len(indexr) == 0: print("Error: SHFLX required for energy calc")
 
     etop = np.array( [vavg_vecA[xfsnt]-vavg_vecA[xflnt] ])
