@@ -36,7 +36,7 @@ parser.add_argument('--cam',        action='store_true', help='read atmosphere m
 parser.add_argument('--cice',       action='store_true', help='read sea ice model data')
 parser.add_argument('--clm',        action='store_true', help='read land model data')
 parser.add_argument('--rundir',     action='store_true', help='read files from run directory instead of archive')
-parser.add_argument('--plots',      action='store_true', help='do not do lineplots at end of sequence')
+parser.add_argument('--plots',      action='store_true', help='do lineplots at end of sequence')
 parser.add_argument('--data',       action='store_true', help='print to data file')
 args = parser.parse_args()
 
