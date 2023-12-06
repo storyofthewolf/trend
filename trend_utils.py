@@ -325,6 +325,7 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                     do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
                     firstDate, lastDate, case_id):
 #!! routine is incomplete !!
+#!! needs land and ice model plotting !!
 
     if (do_atm == True):
         print("Entering atmosphere model plot sequence...")
@@ -353,6 +354,10 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                         # increasingg curve
                             y1 = max(intavg2_vecA[0:na, xa]) * 0.95
                             y2 = max(intavg2_vecA[0:na, xa]) * 1.02
+                    else:
+                        # set your own limits, however these won't be correct for every variable
+                        y1=0
+                        y2=100
                     plt.plot(x, var1, linestyle='-', color='b', label='monthly avg')
                     plt.plot(x, var2, linestyle='-', color='g', label='1 year avg')
                     plt.plot(x, var3, linestyle='-', color='r', label='10 year avg')
@@ -375,7 +380,7 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                 var5 = intavg1_vecA[a,xa] ; var5 = np.squeeze(var5)
                 var6 = intavg2_vecA[a,xa] ; var6 = np.squeeze(var6)
 
-                # found some cases where this isn't working propoe
+                # found some cases where this isn't working properly
                 if auto_t_bound == True:
                     fac = intavg2_vecA[na, xa]/intavg2_vecA[0, xa]
                     if intavg2_vecA[0, xa] > intavg2_vecA[na, xa]:
@@ -390,8 +395,10 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                     # neutral curve
                        y1 = min(intavg2_vecA[0:na, xa])
                        y2 = max(intavg2_vecA[0:na, xa])
-                y1=-3.0
-                y2=3.0
+                else:      
+                    # set your own limits
+                    y1=-3.0
+                    y2=3.0
 
                 plt.plot(x, var1, linestyle='-', color='b', label='monthly avg')
                 plt.plot(x, var2, linestyle='-', color='g', label='1 year avg')
