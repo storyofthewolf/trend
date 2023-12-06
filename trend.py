@@ -224,18 +224,24 @@ if do_atm == True:
     print(atmvars_in)
     print("atmosphere print variables")
     print(atmprint_in)
+    print("atmosphere plot variables")
+    print(atmplot_in)
 
 if do_ice == True:
     print("ice model variables")
     print(icevars_in)
     print("ice print variables")
     print(iceprint_in)
+    print("ice plot variables")
+    print(iceplot_in)
 
 if do_lnd == True:
     print("land model variables")
     print(lndvars_in)
     print("land print variables")
     print(lndprint_in)
+    print("land plot variables")
+    print(lndplot_in)
 
 print("=== Resolution ===");
 print("nlon  ", nlon)

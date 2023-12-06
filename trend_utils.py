@@ -124,7 +124,7 @@ def print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, l
                  do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
                  i):
   
-    print_offset = 0      
+    print_offset = 1
     if (avgfreq == 0): print_offset = 2
     if (avgfreq == 1): print_offset = 1
     if (avgfreq == 2): print_offset = 0
