@@ -16,9 +16,12 @@ import numpy as np
 # offset for variable read in. value of 4 for lon, lat, lev, time
 atm_vars_offset = 4 
 ice_vars_offset = 1
-auto_t_bound = True
+auto_t_bound = True    # automatically set the temperature plot y-axis
+auto_e_bound = True    # automatically set the energy balance y-axis
 
-
+# manually set energy plot bounds if desired
+ey1 = -3.0
+ey2 = 3.0
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # // read_request_var //
 # script to read in text files containing the string-type variable
@@ -351,7 +354,7 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                             y1 = min(intavg2_vecA[0:na, xa]) * 0.98
                             y2 = min(intavg2_vecA[0:na, xa]) * 1.05
                         elif intavg2_vecA[0, xa] <= intavg2_vecA[na, xa]:
-                        # increasingg curve
+                        # increasing curve
                             y1 = max(intavg2_vecA[0:na, xa]) * 0.95
                             y2 = max(intavg2_vecA[0:na, xa]) * 1.02
                     else:
@@ -380,25 +383,18 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                 var5 = intavg1_vecA[a,xa] ; var5 = np.squeeze(var5)
                 var6 = intavg2_vecA[a,xa] ; var6 = np.squeeze(var6)
 
-                # found some cases where this isn't working properly
-                if auto_t_bound == True:
-                    fac = intavg2_vecA[na, xa]/intavg2_vecA[0, xa]
-                    if intavg2_vecA[0, xa] > intavg2_vecA[na, xa]:
-                    # decreasing curve
-                        y1 = min(intavg2_vecA[0:na, xa]) 
-                        y2 = max(intavg2_vecA[0:na, xa])*fac
-                    elif intavg2_vecA[0, xa] <= intavg2_vecA[na, xa]:
-                    # increasing curve
-                        y1 = min(intavg2_vecA[0:na, xa])/fac 
-                        y2 = max(intavg2_vecA[0:na, xa])
-                    else:
-                    # neutral curve
-                       y1 = min(intavg2_vecA[0:na, xa])
-                       y2 = max(intavg2_vecA[0:na, xa])
+                # found some cases where this isn't working properly                
+                if auto_e_bound == True:
+                    bottom_arr = [var1, var2, var3, var4, var5, var6]
+                    top_arr = [var1, var2, var3, var4, var5, var6]
+                    y11 = np.minimum.reduce(bottom_arr)
+                    y22 = np.maximum.reduce(top_arr)
+                    y1  = np.minimum.reduce(y11)
+                    y2  = np.maximum.reduce(y22)
                 else:      
                     # set your own limits
-                    y1=-3.0
-                    y2=3.0
+                    y1=ey1
+                    y2=ey2
 
                 plt.plot(x, var1, linestyle='-', color='b', label='monthly avg')
                 plt.plot(x, var2, linestyle='-', color='g', label='1 year avg')
