@@ -52,7 +52,7 @@ read_rundir   = False
 if args.rundir:  read_rundir = args.rundir
 
 # the root path to your working directory
-dir = '/gpfsm/dnb53/etwolf/cesm_scratch/'
+dir = '/discover/nobackup/etwolf/cesm_scratch/'
 # dir = '/discover/nobackup/tfauchez/cesm_scratch/'
 
 # model prefixs
@@ -420,6 +420,7 @@ while True:
 #-----------------------------------------------------------------------------------------------------------------
 print("Concluding             ", case_id)
 print("Number of files read:  ", i)
+print("Earth years:           ", i/12.)
 print("End date (year-month): ", lastDate)
 
 
