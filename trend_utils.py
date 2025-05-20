@@ -127,7 +127,7 @@ def print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, l
                  do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
                  i):
   
-    print_offset = 1
+    print_offset = 0
     if (avgfreq == 0): print_offset = 2
     if (avgfreq == 1): print_offset = 1
     if (avgfreq == 2): print_offset = 0
@@ -180,9 +180,9 @@ def print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, l
 
         if (firstCall == True):                  
             format_string = "{%s}"
-            print("i  ", end=' ',flush=True)
+            print("i     ", end=' ',flush=True)
             for x in atmprint_in:
-                print(x, end=' ',flush=True)
+                print(x, end='   ',flush=True)
             print()        
          
         # Define the desired formatting
@@ -404,6 +404,46 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                 plt.plot(x, var5, linestyle='--', color='g', label='1 year avg')
                 plt.plot(x, var6, linestyle='--', color='r', label='10 year avg')
 
+                plt.xlim([np.min(x), np.max(x)])
+                plt.ylim([y1, y2])
+                plt.title(var)
+                plt.legend()
+                plt.show()
+
+
+    if (do_ice == True):
+        print("Entering ice model plot sequence...")
+        a   = np.where(time_vecI != 0) 
+        a   = np.squeeze(a)
+        na  = len(a)-1     
+
+        # include everything else in a general loop
+        for var in iceplot_in:
+            print(var)
+            indexr = np.where(np.array(icevars_in) == var)[0]
+            if (indexr >= 0):
+                xa = indexr + ice_vars_offset
+                x    = time_vecI[a]
+                var1 = vavg_vecI[a,xa]    ; var1 = np.squeeze(var1)
+                var2 = intavg1_vecI[a,xa] ; var2 = np.squeeze(var2)
+                var3 = intavg2_vecI[a,xa] ; var3 = np.squeeze(var3)
+
+                if auto_t_bound == True:
+                    if intavg2_vecI[0, xa] > intavg2_vecI[na, xa]:
+                    # decreasing curve
+                        y1 = min(intavg2_vecI[0:na, xa]) * 0.98
+                        y2 = min(intavg2_vecI[0:na, xa]) * 1.05
+                    elif intavg2_vecA[0, xa] <= intavg2_vecA[na, xa]:
+                     # increasing curve
+                        y1 = max(intavg2_vecI[0:na, xa]) * 0.95
+                        y2 = max(intavg2_vecI[0:na, xa]) * 1.02
+                else:
+                    # set your own limits, however these won't be correct for every variable
+                    y1=0
+                    y2=100
+                plt.plot(x, var1, linestyle='-', color='b', label='monthly avg')
+                plt.plot(x, var2, linestyle='-', color='g', label='1 year avg')
+                plt.plot(x, var3, linestyle='-', color='r', label='10 year avg')
                 plt.xlim([np.min(x), np.max(x)])
                 plt.ylim([y1, y2])
                 plt.title(var)
