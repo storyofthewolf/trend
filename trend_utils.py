@@ -374,10 +374,12 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
             if (var == 'energy'):
                 x    = time_vecA[a]
                 N = len(vavg_vecA[0,:])
+                # surface energy balance
                 xa = N-1                
                 var1 = vavg_vecA[a,xa]    ; var1 = np.squeeze(var1)
                 var2 = intavg1_vecA[a,xa] ; var2 = np.squeeze(var2)
                 var3 = intavg2_vecA[a,xa] ; var3 = np.squeeze(var3)
+                # toa energy balance
                 xa = N-2
                 var4 = vavg_vecA[a,xa]    ; var4 = np.squeeze(var4)
                 var5 = intavg1_vecA[a,xa] ; var5 = np.squeeze(var5)
@@ -396,13 +398,15 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                     y1=ey1
                     y2=ey2
 
-                plt.plot(x, var1, linestyle='-', color='b', label='monthly avg')
-                plt.plot(x, var2, linestyle='-', color='g', label='1 year avg')
-                plt.plot(x, var3, linestyle='-', color='r', label='10 year avg')
+                # surface energy balance    
+                plt.plot(x, var1, linestyle='-', color='b', label='surf ebal monthly avg')
+                plt.plot(x, var2, linestyle='-', color='g', label='surf ebal  1 year avg')
+                plt.plot(x, var3, linestyle='-', color='r', label='surf ebal 10 year avg')
 
-                plt.plot(x, var4, linestyle='--', color='b', label='monthly avg')
-                plt.plot(x, var5, linestyle='--', color='g', label='1 year avg')
-                plt.plot(x, var6, linestyle='--', color='r', label='10 year avg')
+                # toa energy balance
+                plt.plot(x, var4, linestyle='--', color='b', label='toa ebal monthly avg')
+                plt.plot(x, var5, linestyle='--', color='g', label='toa ebal 1 year avg')
+                plt.plot(x, var6, linestyle='--', color='r', label='toa ebal 10 year avg')
 
                 plt.xlim([np.min(x), np.max(x)])
                 plt.ylim([y1, y2])

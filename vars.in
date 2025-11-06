@@ -1,14 +1,14 @@
   // input fields -- fields read in from netcdf files //
-TS FLNT FSNT FLNS FSNS LHFLX SHFLX ICEFRAC FSDTOA
+TS FLNT FSNT FLNS FSNS LHFLX SHFLX ICEFRAC FSDTOA TGCLDLWP
 Tsfc qi qs hi hs vicen005
 TG 
   // output fields -- output to screen and/or textfile //
-TS FLNT FSNT FLNS FSNS LHFLX SHFLX ICEFRAC energy
+TS FLNT FSNT FLNS FSNS LHFLX SHFLX TGCLDLWP energy 
 Tsfc qi qs hi hs
 TG
   // create plots //
 TS energy
-Tsfc
+Tsfc qi qs
 TG
 
 ###################################################################
