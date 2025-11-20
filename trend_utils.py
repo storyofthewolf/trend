@@ -125,7 +125,7 @@ def print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, l
                  do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
                  do_ice, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI, slope_intavg1_vecI, slope_intavg2_vecI, \
                  do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
-                 i):
+                 date_tag, i):
   
     print_offset = 0
     if (avgfreq == 0): print_offset = 2
@@ -180,15 +180,16 @@ def print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, l
 
         if (firstCall == True):                  
             format_string = "{%s}"
-            print("i     ", end=' ',flush=True)
+            print("i    ", end=' ',flush=True)
+            print("date      ", end=' ',flush=True)
             for x in atmprint_in:
-                print(x, end='   ',flush=True)
+                print(x, end='    ',flush=True)
             print()        
          
         # Define the desired formatting
         format_string = "{:.3f}"
-        
         print(int(atmout[0]), end='  ',flush=True)
+        print(date_tag, end='  ',flush=True)
         N=len(atmout)
         for x in range(int((N-1)/3)):
             y=int(3*(x+1)-print_offset)
@@ -222,6 +223,7 @@ def print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, l
         format_string = "{:.3f}"
         
         print(int(iceout[0]), end='  ',flush=True)
+        print(date_tag, end='  ',flush=True)
         N=len(iceout)
         for x in range(int((N-1)/3)):
             y=int(3*(x+1)-print_offset)
@@ -246,6 +248,7 @@ def print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, l
         format_string = "{:.3f}"
         
         print(int(lndout[0]), end='  ',flush=True)
+        print(date_tag, end='  ',flush=True)
         N=len(lndout)
         for x in range(int((N-1)/3)):
             y=int(3*(x+1)-print_offset)
@@ -359,8 +362,8 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                             y2 = max(intavg2_vecA[0:na, xa]) * 1.02
                     else:
                         # set your own limits, however these won't be correct for every variable
-                        y1=0
-                        y2=100
+                        y1=280
+                        y2=380
                     plt.plot(x, var1, linestyle='-', color='b', label='monthly avg')
                     plt.plot(x, var2, linestyle='-', color='g', label='1 year avg')
                     plt.plot(x, var3, linestyle='-', color='r', label='10 year avg')

@@ -274,17 +274,20 @@ while True:
         month = str(month_i)
 
     if year < 10:
-        file_atm = root_atm + '/' + case_id + prefixA + '000' + str(year) + '-' + month + '.nc'
-        file_ice = root_ice + '/' + case_id + prefixI + '000' + str(year) + '-' + month + '.nc'
-        file_lnd = root_lnd + '/' + case_id + prefixL + '000' + str(year) + '-' + month + '.nc'
+        date_tag = '000' + str(year) + '-' + month
+        file_atm = root_atm + '/' + case_id + prefixA + date_tag + '.nc'
+        file_ice = root_ice + '/' + case_id + prefixI + date_tag + '.nc'
+        file_lnd = root_lnd + '/' + case_id + prefixL + date_tag + '.nc'
     elif year >= 10 and year < 100:
-        file_atm = root_atm + '/' + case_id + prefixA + '00' + str(year) + '-' + month + '.nc'
-        file_ice = root_ice + '/' + case_id + prefixI + '00' + str(year) + '-' + month + '.nc'
-        file_lnd = root_lnd + '/' + case_id + prefixL + '00' + str(year) + '-' + month + '.nc'
+        date_tag = '00' + str(year) + '-' + month
+        file_atm = root_atm + '/' + case_id + prefixA + date_tag + '.nc'
+        file_ice = root_ice + '/' + case_id + prefixI + date_tag + '.nc'
+        file_lnd = root_lnd + '/' + case_id + prefixL + date_tag + '.nc'
     elif year >= 100:
-        file_atm = root_atm + '/' + case_id + prefixA + '0' + str(year) + '-' + month + '.nc'
-        file_ice = root_ice + '/' + case_id + prefixI + '0' + str(year) + '-' + month + '.nc'
-        file_lnd = root_lnd + '/' + case_id + prefixL + '0' + str(year) + '-' + month + '.nc'
+        date_tag = '0' + str(year) + '-' + month
+        file_atm = root_atm + '/' + case_id + prefixA + date_tag + '.nc'
+        file_ice = root_ice + '/' + case_id + prefixI + date_tag + '.nc'
+        file_lnd = root_lnd + '/' + case_id + prefixL + date_tag+ '.nc'
     # Exit loop if there are no more files to scan through
     # I can probably condense this done to scanning 1 file set, even if its not the choosen file set
     if do_atm == True:
@@ -412,7 +415,7 @@ while True:
                            do_atm, time_vecA[i], vavg_vecA[i,:], intavg1_vecA[i,:], intavg2_vecA[i,:], slope_intavg1_vecA[i,:], slope_intavg2_vecA[i,:], \
                            do_ice, time_vecI[i], vavg_vecI[i,:], intavg1_vecI[i,:], intavg2_vecI[i,:], slope_intavg1_vecI[i,:], slope_intavg2_vecI[i,:], \
                            do_lnd, time_vecL[i], vavg_vecL[i,:], intavg1_vecL[i,:], intavg2_vecL[i,:], slope_intavg1_vecL[i,:], slope_intavg2_vecL[i,:], \
-                           i)
+                           date_tag, i)
         firstPrintCall = False 
     i=i+1
 #-----------------------------------------------------------------------------------------------------------------
