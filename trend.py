@@ -21,9 +21,13 @@ import netCDF4 as nc
 import numpy   as np
 import os
 import sys
+import time
 import trend_utils as trend
 import trend_core  as core
 import argparse
+
+def print_timing(label, elapsed):
+    print(f"  {label:<40} {elapsed:6.1f}s")
 
 # input arguments and options
 parser = argparse.ArgumentParser()
@@ -148,6 +152,12 @@ root_lnd = ' '.join(root_lnd.split())
 #------------------------------------------
 # Peak in first file to get lon, lat, lev
 #------------------------------------------
+timing = {}
+print("========================================")
+print("=========  file peek               ======")
+print("========================================")
+t0 = time.time()
+
 file_atm = f"{root_atm}/{case_id}.cam.h0.{START_YEAR:04d}-01.nc"
 
 ncid = nc.Dataset(file_atm, 'r')
@@ -158,6 +168,9 @@ nlat = lat.size
 lev = ncid.variables['lev'][:]
 nlev = lev.size
 ncid.close()
+
+timing['file peek'] = time.time() - t0
+print_timing('file peek', timing['file peek'])
 
 
 #------------------------------------------------------
@@ -243,6 +256,7 @@ print("nlev  ", nlev)
 print("========================================")
 print("=========  scanning file series ========")
 print("========================================")
+t0 = time.time()
 firstDate = None
 lastDate  = None
 i = 0
@@ -285,7 +299,9 @@ while True:
     i += 1
 
 N_actual = i
+timing['file scan'] = time.time() - t0
 print("Scan complete. Timesteps found:", N_actual)
+print_timing('file scan', timing['file scan'])
 
 #-----------------------------------------------------------------------------------------------------------------
 # Load all data upfront with xarray + dask, then compute global means in one pass.
@@ -306,29 +322,55 @@ weights      = core.build_area_weights(lon, lat)
 time_offset  = (START_YEAR - 1) * 12   # months before START_YEAR present in the archive glob
 
 if do_atm == True:
+    t0 = time.time()
     ds_atm  = core.load_dataset(root_atm, case_id, prefixA, list(atmvars_in))
+    timing['load_dataset (atm)'] = time.time() - t0
+    print_timing('load_dataset (atm)', timing['load_dataset (atm)'])
+
+    t0 = time.time()
     gm_atm  = core.global_mean_dataset(ds_atm, weights)
+    timing['global_mean_dataset (atm)'] = time.time() - t0
+    print_timing('global_mean_dataset (atm)', timing['global_mean_dataset (atm)'])
+
     for n, vname in enumerate(atmvars_in):
         if vname in gm_atm:
             vavg_vecA[:N_actual, nv1dA + n] = gm_atm[vname].values[time_offset:time_offset + N_actual]
 
 if do_ice == True:
+    t0 = time.time()
     ds_ice  = core.load_dataset(root_ice, case_id, prefixI, list(icevars_in))
+    timing['load_dataset (ice)'] = time.time() - t0
+    print_timing('load_dataset (ice)', timing['load_dataset (ice)'])
+
+    t0 = time.time()
     gm_ice  = core.global_mean_dataset(ds_ice, weights)
+    timing['global_mean_dataset (ice)'] = time.time() - t0
+    print_timing('global_mean_dataset (ice)', timing['global_mean_dataset (ice)'])
+
     for n, vname in enumerate(icevars_in):
         if vname in gm_ice:
             vavg_vecI[:N_actual, nv1dI + n] = gm_ice[vname].values[time_offset:time_offset + N_actual]
 
 if do_lnd == True:
+    t0 = time.time()
     ds_lnd  = core.load_dataset(root_lnd, case_id, prefixL, list(lndvars_in))
+    timing['load_dataset (lnd)'] = time.time() - t0
+    print_timing('load_dataset (lnd)', timing['load_dataset (lnd)'])
+
+    t0 = time.time()
     gm_lnd  = core.global_mean_dataset(ds_lnd, weights)
+    timing['global_mean_dataset (lnd)'] = time.time() - t0
+    print_timing('global_mean_dataset (lnd)', timing['global_mean_dataset (lnd)'])
+
     for n, vname in enumerate(lndvars_in):
         if vname in gm_lnd:
             vavg_vecL[:N_actual, nv1dL + n] = gm_lnd[vname].values[time_offset:time_offset + N_actual]
 
-#-----------------------------------------------------
-# Calculate Energy Balance for all timesteps (if requested)
-#-----------------------------------------------------
+#------------------------------------------------------
+# Energy balance for all timesteps (if requested).
+# Must be computed before running means so energy columns
+# are populated when the stats loop reads vavg_vecA.
+#------------------------------------------------------
 if energy_requested and do_atm == True:
     for i in range(N_actual):
         etop, ebot = trend.atm_energy_calc(atmvars_in, vavg_vecA[i, :])
@@ -339,6 +381,11 @@ if energy_requested and do_atm == True:
 # Running means and slopes -- O(N) via cumsum, computed
 # once per variable column over the full filled series.
 #------------------------------------------------------
+print("========================================")
+print("=========  running means            ======")
+print("========================================")
+t0 = time.time()
+
 if do_atm == True:
     for n in range(nv1dA, nvtotA):
         r1, r2, s1, s2 = core.compute_running_means(vavg_vecA[:N_actual, n], int1, int2)
@@ -363,22 +410,38 @@ if do_lnd == True:
         slope_intavg1_vecL[:N_actual, n] = s1
         slope_intavg2_vecL[:N_actual, n] = s2
 
+timing['running means'] = time.time() - t0
+print_timing('running means', timing['running means'])
+
 #-----------------------------------------------------------------------------------------------------------------
-# Post-processing loop: print to screen at requested interval
+# Post-processing loop: print to screen at requested interval.
 # All global means and statistics are already computed; this loop only handles output.
 #-----------------------------------------------------------------------------------------------------------------
 print("========================================")
 print("=========  starting output loop  =======")
 print("========================================")
+t0 = time.time()
 firstPrintCall = True
 for i in range(N_actual):
     if (i + 1) % print_int == 0:
-        trend.print2screen(atmvars_in, icevars_in, lndvars_in, atmprint_in, iceprint_in, lndprint_in, firstPrintCall, avgfreq, \
-                           do_atm, time_vecA[i], vavg_vecA[i,:], intavg1_vecA[i,:], intavg2_vecA[i,:], slope_intavg1_vecA[i,:], slope_intavg2_vecA[i,:], \
-                           do_ice, time_vecI[i], vavg_vecI[i,:], intavg1_vecI[i,:], intavg2_vecI[i,:], slope_intavg1_vecI[i,:], slope_intavg2_vecI[i,:], \
-                           do_lnd, time_vecL[i], vavg_vecL[i,:], intavg1_vecL[i,:], intavg2_vecL[i,:], slope_intavg1_vecL[i,:], slope_intavg2_vecL[i,:], \
+        trend.print2screen(atmvars_in, icevars_in, lndvars_in,
+                           atmprint_in, iceprint_in, lndprint_in,
+                           firstPrintCall, avgfreq,
+                           do_atm, time_vecA[i], vavg_vecA[i,:],
+                           intavg1_vecA[i,:], intavg2_vecA[i,:],
+                           slope_intavg1_vecA[i,:], slope_intavg2_vecA[i,:],
+                           do_ice, time_vecI[i], vavg_vecI[i,:],
+                           intavg1_vecI[i,:], intavg2_vecI[i,:],
+                           slope_intavg1_vecI[i,:], slope_intavg2_vecI[i,:],
+                           do_lnd, time_vecL[i], vavg_vecL[i,:],
+                           intavg1_vecL[i,:], intavg2_vecL[i,:],
+                           slope_intavg1_vecL[i,:], slope_intavg2_vecL[i,:],
                            i)
         firstPrintCall = False
+
+timing['print output'] = time.time() - t0
+print_timing('print output', timing['print output'])
+
 #-----------------------------------------------------------------------------------------------------------------
 # end output loop
 #-----------------------------------------------------------------------------------------------------------------
@@ -406,5 +469,13 @@ if args.plots == True:
                         do_ice, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI, slope_intavg1_vecI, slope_intavg2_vecI, \
                         do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
                         firstDate, lastDate, case_id)
+
+print("========================================")
+print("=========  timing summary          ======")
+print("========================================")
+total = sum(timing.values())
+for label, elapsed in timing.items():
+    print_timing(label, elapsed)
+print_timing('total', total)
 
 sys.exit()
