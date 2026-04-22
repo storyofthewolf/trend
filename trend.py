@@ -56,7 +56,7 @@ read_rundir   = False
 if args.rundir:  read_rundir = args.rundir
 
 # the root path to your working directory
-dir = '/gpfsm/dnb53/etwolf/cesm_scratch/'
+dir = '/gpfsm/dnb33/etwolf/cesm_scratch/'
 # dir = '/discover/nobackup/tfauchez/cesm_scratch/'
 
 # model prefixs
