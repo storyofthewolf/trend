@@ -10,7 +10,8 @@
 
 import numpy as np
 import xarray as xr
-
+import time
+import glob
 
 def build_area_weights(lon, lat):
     """
@@ -37,22 +38,33 @@ def build_area_weights(lon, lat):
 
 
 def load_dataset(root_path, case_id, prefix, varnames):
-    """
-    Open all monthly component files at once with dask-backed lazy loading.
-    Files are matched by glob and concatenated along the time dimension.
-    Returns a Dataset containing only the requested variables.
-    No data is read from disk until compute() is called.
-    """
     glob_pattern = f"{root_path}/{case_id}{prefix}*.nc"
-    ds = xr.open_mfdataset(
-        glob_pattern,
-        combine='by_coords',
-        data_vars='minimal',
-        coords='minimal',
-        compat='override',
-        parallel=True,
-    )
-    return ds[list(varnames)]
+    files = sorted(glob.glob(glob_pattern))    
+    print(f"  found {len(files)} files")
+
+    t0 = time.time()
+    ds = xr.open_mfdataset(files, combine='nested', concat_dim='time',
+                           data_vars='minimal', coords='minimal',
+                           compat='override', parallel=False,
+                           decode_times=False)
+    print(f"  open_mfdataset: {time.time()-t0:.1f}s")
+    
+    # check which requested variables actually exist
+    missing = [v for v in varnames if v not in ds]
+    valid   = [v for v in varnames if v in ds]
+    
+    if missing:
+        print(f"\nWARNING: the following variables in vars.in were not found in the dataset and will be skipped:")
+        for v in missing:
+            print(f"  {v}")
+    
+    if not valid:
+        print("ERROR: no valid variables found. Check vars.in against your netCDF files.")
+        sys.exit(1)
+
+    t1 = time.time()
+    print(f"  subset: {time.time()-t1:.1f}s")
+    return ds[valid]
 
 
 def global_mean_dataset(ds, weights):
@@ -62,8 +74,22 @@ def global_mean_dataset(ds, weights):
     excluded from the weighted sum. Triggers dask computation and returns
     an in-memory Dataset of 1D time series (one scalar per timestep per variable).
     """
-    weights_da = xr.DataArray(weights, dims=['lat', 'lon'])
+
+#    weights_da = xr.DataArray(weights, dims=['lat', 'lon'])
+#    ds = ds.where(ds != -999.0)
+
+    t0 = time.time()
+    weights_da = xr.DataArray(weights, dims=['lat','lon'])
     ds = ds.where(ds != -999.0)
+    print(f"  where masking: {time.time()-t0:.1f}s")
+    
+    t1 = time.time()
+    result = ds.weighted(weights_da).mean(dim=['lat','lon'])
+    print(f"  weighted mean (lazy): {time.time()-t1:.1f}s")
+    
+    t2 = time.time()
+    result = result.compute()
+    print(f"  compute (actual I/O): {time.time()-t2:.1f}s")
     return ds.weighted(weights_da).mean(dim=['lat', 'lon']).compute()
 
 
