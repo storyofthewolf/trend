@@ -36,7 +36,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('case_id'     , type=str,   nargs=1, default=' ',  help='Set simulation time series case name')
 parser.add_argument('-y'          , type=int,   default='1', help='Start year over which to begin timeseries')
 parser.add_argument('-n'          , type=int,   default='6000', help='Number of months to integrate over')
-parser.add_argument('-p'          , type=int,   default='10', help='Interval for screen output, in number of months')
+parser.add_argument('-p'          , type=int,   default=None, help='Interval for screen output, in number of months (omit to suppress running output)')
 parser.add_argument('-a'          , type=int,   default='2',  help='Average frequency for screen output, 0:monthly, 1:yearly, 2:decadal')
 parser.add_argument('--cam',        action='store_true', help='read atmosphere model data')
 parser.add_argument('--cice',       action='store_true', help='read sea ice model data')
@@ -45,6 +45,9 @@ parser.add_argument('--rundir',     action='store_true', help='read files from r
 parser.add_argument('--testdir',    type=str, default=None, help='read files directly from this fixed directory path (for local testing)')
 parser.add_argument('--plots',      action='store_true', help='do lineplots at end of sequence')
 parser.add_argument('--data',       action='store_true', help='print to data file')
+parser.add_argument('--timing',     action='store_true', help='print wall-clock timing summary at end of run')
+parser.add_argument('--int1',       type=int, default=1,  help='Short averaging window in years (default: 1)')
+parser.add_argument('--int2',       type=int, default=10, help='Long averaging window in years (default: 10)')
 args = parser.parse_args()
 
 # define case
@@ -77,14 +80,10 @@ if args.clm:  do_lnd = True
 
 
 # define time averaging intervals
-# interval average 1 length
-# one Earth year
-int1 = 1 * 12
-# interval average 2 length
-# ten Earth years
-int2 = 10 * 12
-#  interval to print outputs to screen
-print_int = int(args.p)
+int1 = args.int1 * 12
+int2 = args.int2 * 12
+#  interval to print outputs to screen (None means suppress running output)
+print_int = args.p
 
 
 #
@@ -155,9 +154,7 @@ root_lnd = ' '.join(root_lnd.split())
 # Peak in first file to get lon, lat, lev
 #------------------------------------------
 timing = {}
-print("========================================")
-print("=========  file peek               ======")
-print("========================================")
+
 t0 = time.time()
 
 file_atm = f"{root_atm}/{case_id}.cam.h0.{START_YEAR:04d}-01.nc"
@@ -172,7 +169,7 @@ nlev = lev.size
 ncid.close()
 
 timing['file peek'] = time.time() - t0
-print_timing('file peek', timing['file peek'])
+#print_timing('file peek', timing['file peek'])
 
 
 #------------------------------------------------------
@@ -207,6 +204,7 @@ slope_intavg2_vecL = np.zeros((NT, nvtotL), dtype=float)
 #------------------------------------------------------
 # Print setup information to screen
 #-------------------------------------------------------
+print("\n")
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 print("~~~~~~~~~~~~~~~~~ ExoCAM trend analysis ~~~~~~~~~~~~~~~~")
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -303,7 +301,20 @@ while True:
 N_actual = i
 timing['file scan'] = time.time() - t0
 print("Scan complete. Timesteps found:", N_actual)
-print_timing('file scan', timing['file scan'])
+#print_timing('file scan', timing['file scan'])
+
+if int1 >= int2:
+    print(f"  WARNING: --int1 ({args.int1} yr) must be less than --int2 ({args.int2} yr). Setting int1 = 1 year.")
+    int1 = 12
+if int1 > N_actual:
+    print(f"  WARNING: --int1 ({args.int1} years, {int1} months) exceeds available timesteps ({N_actual}). "
+          f"Capping int1 at {N_actual} months.")
+    int1 = N_actual
+if int2 > N_actual:
+    print(f"  WARNING: --int2 ({args.int2} years, {int2} months) exceeds available timesteps ({N_actual}). "
+          f"Capping int2 at {N_actual} months "
+          f"({N_actual//12} years, {N_actual%12} months remainder).")
+    int2 = N_actual
 
 #-----------------------------------------------------------------------------------------------------------------
 # Read all monthly files and compute area-weighted global means.
@@ -331,7 +342,7 @@ if do_atm == True:
                                                  N_actual, weights)
     timing['read and average (atm)'] = time.time() - t0
     print(f"  found {len(files_atm)} files")
-    print_timing('read and average (atm)', timing['read and average (atm)'])
+    #print_timing('read and average (atm)', timing['read and average (atm)'])
     for n in range(len(atmvars_in)):
         vavg_vecA[:N_actual, nv1dA + n] = gm_atm[:, n]
 
@@ -342,7 +353,7 @@ if do_ice == True:
                                                  N_actual, weights)
     timing['read and average (ice)'] = time.time() - t0
     print(f"  found {len(files_ice)} files")
-    print_timing('read and average (ice)', timing['read and average (ice)'])
+    #print_timing('read and average (ice)', timing['read and average (ice)'])
     for n in range(len(icevars_in)):
         vavg_vecI[:N_actual, nv1dI + n] = gm_ice[:, n]
 
@@ -353,7 +364,7 @@ if do_lnd == True:
                                                  N_actual, weights)
     timing['read and average (lnd)'] = time.time() - t0
     print(f"  found {len(files_lnd)} files")
-    print_timing('read and average (lnd)', timing['read and average (lnd)'])
+    #print_timing('read and average (lnd)', timing['read and average (lnd)'])
     for n in range(len(lndvars_in)):
         vavg_vecL[:N_actual, nv1dL + n] = gm_lnd[:, n]
 
@@ -373,7 +384,7 @@ if energy_requested and do_atm == True:
 # once per variable column over the full filled series.
 #------------------------------------------------------
 print("========================================")
-print("=========  running means            ======")
+print("=========  running means          ======")
 print("========================================")
 t0 = time.time()
 
@@ -402,7 +413,7 @@ if do_lnd == True:
         slope_intavg2_vecL[:N_actual, n] = s2
 
 timing['running means'] = time.time() - t0
-print_timing('running means', timing['running means'])
+#print_timing('running means', timing['running means'])
 
 #-----------------------------------------------------------------------------------------------------------------
 # Post-processing loop: print to screen at requested interval.
@@ -414,7 +425,7 @@ print("========================================")
 t0 = time.time()
 firstPrintCall = True
 for i in range(N_actual):
-    if (i + 1) % print_int == 0:
+    if print_int is not None and (i + 1) % print_int == 0:
         trend.print2screen(atmvars_in, icevars_in, lndvars_in,
                            atmprint_in, iceprint_in, lndprint_in,
                            firstPrintCall, avgfreq,
@@ -431,7 +442,7 @@ for i in range(N_actual):
         firstPrintCall = False
 
 timing['print output'] = time.time() - t0
-print_timing('print output', timing['print output'])
+#print_timing('print output', timing['print output'])
 
 #-----------------------------------------------------------------------------------------------------------------
 # end output loop
@@ -461,12 +472,21 @@ if args.plots == True:
                         do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
                         firstDate, lastDate, case_id)
 
-print("========================================")
-print("=========  timing summary          ======")
-print("========================================")
-total = sum(timing.values())
-for label, elapsed in timing.items():
-    print_timing(label, elapsed)
-print_timing('total', total)
+trend.print_final_summary(atmvars_in, icevars_in, lndvars_in,
+                          do_atm, do_ice, do_lnd,
+                          vavg_vecA, intavg1_vecA, intavg2_vecA,
+                          vavg_vecI, intavg1_vecI, intavg2_vecI,
+                          vavg_vecL, intavg1_vecL, intavg2_vecL,
+                          N_actual, case_id, firstDate, lastDate,
+                          args.int1, args.int2)
+
+if args.timing:
+    print("========================================")
+    print("=========  timing summary         ======")
+    print("========================================")
+    total = sum(timing.values())
+    for label, elapsed in timing.items():
+        print_timing(label, elapsed)
+    print_timing('total', total)
 
 sys.exit()

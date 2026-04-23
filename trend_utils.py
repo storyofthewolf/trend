@@ -453,5 +453,69 @@ def atm_energy_calc(atmvars, vavg_vecA):
 
     ebot = np.array( [vavg_vecA[xfsns]-vavg_vecA[xflns] - vavg_vecA[xlhflx] - vavg_vecA[xshflx] ])
     ebot = np.squeeze(ebot)
-  
+
     return etop, ebot
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# // print_final_summary //
+# prints a clean summary of final-timestep values and decadal
+# averages for all active component models
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def print_final_summary(atmvars_in, icevars_in, lndvars_in,
+                        do_atm, do_ice, do_lnd,
+                        vavg_vecA, intavg1_vecA, intavg2_vecA,
+                        vavg_vecI, intavg1_vecI, intavg2_vecI,
+                        vavg_vecL, intavg1_vecL, intavg2_vecL,
+                        N_actual, case_id, firstDate, lastDate,
+                        int1_yr, int2_yr):
+
+    def _fmt(val):
+        if np.isnan(val):
+            return 'missing'
+        return f"{val:.3f}"
+
+    def _row(name, final, avg1, avg2):
+        print(f"  {name:<16}{_fmt(final):>14}{_fmt(avg1):>14}{_fmt(avg2):>14}")
+
+    def _header():
+        hdr = f"  {'Variable':<16}{'Final Value':>14}{f'{int1_yr} yr Avg':>14}{f'{int2_yr} yr Avg':>14}"
+        print(hdr)
+        print('  ' + '-' * (len(hdr) - 2))
+
+    print("========================================")
+    print("=========  final summary          ======")
+    print("========================================")
+    print(f"Case:   {case_id}")
+    print(f"Period: {firstDate} to {lastDate}")
+
+    last = N_actual - 1
+
+    if do_atm == True:
+        print("\n--- Atmosphere ---")
+        _header()
+        for n, vname in enumerate(atmvars_in):
+            xi = atm_vars_offset + n
+            _row(vname, vavg_vecA[last, xi], intavg1_vecA[last, xi], intavg2_vecA[last, xi])
+        # energy balance columns are appended after all regular atm variables
+        nvtotA = len(vavg_vecA[0])
+        energy_present = nvtotA > atm_vars_offset + len(atmvars_in)
+        if energy_present:
+            _row('energy_top', vavg_vecA[last, nvtotA - 2], intavg1_vecA[last, nvtotA - 2], intavg2_vecA[last, nvtotA - 2])
+            _row('energy_bot', vavg_vecA[last, nvtotA - 1], intavg1_vecA[last, nvtotA - 1], intavg2_vecA[last, nvtotA - 1])
+
+    if do_ice == True:
+        print("\n--- Sea Ice ---")
+        _header()
+        for n, vname in enumerate(icevars_in):
+            xi = ice_vars_offset + n
+            _row(vname, vavg_vecI[last, xi], intavg1_vecI[last, xi], intavg2_vecI[last, xi])
+
+    if do_lnd == True:
+        print("\n--- Land ---")
+        _header()
+        for n, vname in enumerate(lndvars_in):
+            xi = ice_vars_offset + n
+            _row(vname, vavg_vecL[last, xi], intavg1_vecL[last, xi], intavg2_vecL[last, xi])
+
+    print()
