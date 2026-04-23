@@ -1,28 +1,56 @@
 # trend
 
-This family of scripts allows one to produce time-series outputs of CAM or
-ExoCAM simulations from model outputs produced on a monthly mean cadence.
-The primary use of this package is to determine model convergence characteristics
-and diagnose any residual trends. The model assumes your directory structure
-is set up in accordance with NCAR standards, `$RUNDIR` and `$DOUT_S_ROOT` (i.e. the
-archive directory).
+This family of scripts produces time-series diagnostics from CAM or ExoCAM
+simulations using monthly mean netCDF output. The primary use case is evaluating
+model convergence and diagnosing residual trends in energy balance, surface
+temperature, sea ice, and the hydrological cycle.
 
-**Requires:** `numpy`, `matplotlib`, `xarray`, `dask`, `netCDF4`
+The package assumes directory structure follows NCAR standards (`$RUNDIR` and
+`$DOUT_S_ROOT` / archive directory), or a flat local test directory via `--testdir`.
 
-## Contains
+**Requires:** `numpy`, `matplotlib`, `netCDF4`, `tqdm`
+
+## Files
 
 | File | Description |
 |------|-------------|
-| `trend.py` | Main program |
-| `trend_core.py` | Core computation: area weights, xarray/dask file loading, global mean averaging, and O(N) running statistics |
-| `trend_utils.py` | Functions for reading `vars.in`, screen/text output, and plotting |
-| `vars.in` | Lists of variables to read from atmosphere, ice, and land model respectively |
+| `trend.py` | Main driver script |
+| `trend_core.py` | Core computation: area weights, file I/O, global mean averaging, running statistics |
+| `trend_utils.py` | `vars.in` parsing, screen/text output, and time-series plotting |
+| `vars.in` | Variable namelist: which fields to read, print, and plot for each component model |
+
+## vars.in format
+
+`vars.in` has three blocks separated by blank lines: **read**, **print**, and **plot**.
+Each block has one line per component model (atmosphere, ice, land), with variable
+names separated by spaces.
+
+```
+  // input fields //
+TS FLNT FSNT FLNS FSNS LHFLX SHFLX ICEFRAC FSDTOA
+Tsfc qi qs hi hs vicen005
+TG
+  // output fields //
+TS FLNT FSNT FLNS FSNS LHFLX SHFLX ICEFRAC energy
+Tsfc qi qs hi hs
+TG
+  // create plots //
+TS energy
+Tsfc
+TG
+```
+
+The special token `energy` in the print or plot block triggers automatic
+computation of TOA and surface energy balance from primary flux variables
+(requires FSNT, FLNT, FSNS, FLNS, LHFLX, SHFLX in the read list).
 
 ## Usage
 
 ```
-usage: trend.py [-h] [-y Y] [-n N] [-p P] [-a A] [--cam] [--cice] [--clm]
-                [--rundir] [--testdir PATH] [--plots] [--data]
+usage: trend.py [-h] [-y Y] [-n N] [-p P] [-a A]
+                [--cam] [--cice] [--clm]
+                [--rundir] [--testdir PATH]
+                [--plots] [--data]
                 case_id
 ```
 
@@ -30,35 +58,93 @@ usage: trend.py [-h] [-y Y] [-n N] [-p P] [-a A] [--cam] [--cice] [--clm]
 
 | Argument | Description |
 |----------|-------------|
-| `case_id` | Set simulation time series case name |
+| `case_id` | Simulation case name (must match the filename prefix of the netCDF files) |
 
 ### Optional arguments
 
-| Flag | Description |
-|------|-------------|
-| `-h, --help` | show this help message and exit |
-| `-y Y` | Start year over which to begin timeseries |
-| `-n N` | Number of months to integrate over |
-| `-p P` | Interval for screen output, in number of months |
-| `-a A` | Average shown on screen: 0=monthly, 1=yearly, 2=decadal (default 2) |
-| `--cam` | Read atmosphere model data |
-| `--cice` | Read sea ice model data |
-| `--clm` | Read land model data |
-| `--rundir` | Read files from run directory instead of archive |
-| `--testdir PATH` | Read files directly from `PATH` (local testing; no `case_id` subdirectory structure assumed) |
-| `--plots` | Do lineplots at end of sequence |
-| `--data` | Print to data file |
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-y Y` | 1 | Start year for the time series |
+| `-n N` | 6000 | Maximum number of months to process |
+| `-p P` | 10 | Print to screen every P months |
+| `-a A` | 2 | Value shown in screen output: `0`=instantaneous monthly, `1`=1-year running mean, `2`=10-year running mean |
+| `--cam` | off | Read atmosphere model (`cam.h0`) files |
+| `--cice` | off | Read sea ice model (`cice.h`) files |
+| `--clm` | off | Read land model (`clm2.h0`) files |
+| `--rundir` | off | Read from run directory (`$dir/rundir/<case_id>/run/`) instead of archive |
+| `--testdir PATH` | off | Read all component files from a single flat directory (local testing); files must still follow CAM naming conventions (`case_id.cam.h0.YYYY-MM.nc`) |
+| `--plots` | off | Generate time-series line plots after processing |
+| `--data` | off | Write global mean time series to text files in `data/` |
+
+At least one of `--cam`, `--cice`, or `--clm` must be specified.
+
+### File path modes
+
+| Mode | Path constructed |
+|------|-----------------|
+| Archive (default) | `$dir/archive/<case_id>/atm/hist/` etc. |
+| `--rundir` | `$dir/rundir/<case_id>/run/` for all components |
+| `--testdir PATH` | `PATH/` for all components (no subdirectory structure) |
+
+The base directory `dir` is hardcoded near the top of `trend.py` and must be
+updated for your system.
+
+## Architecture
+
+**`trend.py`** execution is structured in five sequential phases:
+
+1. **File scan** — iterates month-by-month to check file existence, determine
+   `N_actual` (number of available months), and record date strings. No data is read.
+2. **Read and average** — calls `core.read_monthly_files()` once per active component
+   to read all monthly files and compute area-weighted global means.
+3. **Energy balance** — if `energy` is requested in `vars.in`, computes TOA and
+   surface energy balance for all timesteps from the averaged flux variables.
+4. **Running statistics** — calls `core.compute_running_means()` once per variable
+   column to compute 1-year and 10-year rolling means and their slopes (O(N) via cumsum).
+5. **Output loop** — iterates over timesteps printing to screen at the requested interval;
+   optionally writes text files and generates plots.
+
+**`trend_core.py`** functions:
+
+| Function | Description |
+|----------|-------------|
+| `build_area_weights(lon, lat)` | Returns a normalized `(nlat, nlon)` weight array using a staggered lat grid (cell edges at midpoints between grid points, poles at ±90°). Called once at startup. |
+| `global_mean_2d(var2d, weights)` | Area-weighted mean of a single 2D field. Uses `np.ma.average` so masked cells (including -999.0 sentinels) are excluded from both numerator and denominator. |
+| `read_monthly_files(root_path, case_id, prefix, varnames, start_year, n_months, weights)` | Reads monthly netCDF files sequentially via netCDF4, applies `global_mean_2d` to each variable, and returns a `(n_months, len(varnames))` array of global means plus the list of files read. Progress is shown via `tqdm`. |
+| `compute_running_means(vavg_vec, int1, int2)` | Computes causal rolling-window means and slopes for annual (`int1=12`) and decadal (`int2=120`) windows using a cumsum trick. Returns `(intavg1, intavg2, slope1, slope2)`, each a 1D array of the same length as the input. |
+
+**`trend_utils.py`** functions:
+
+| Function | Description |
+|----------|-------------|
+| `read_request_var()` | Parses `vars.in` into 9 lists (read/print/plot × atm/ice/lnd) and validates that all print and plot variables are present in the read list. |
+| `print2screen(...)` | Prints a formatted table row at the current timestep. The `-a` flag selects which average is displayed (monthly/annual/decadal). |
+| `atm_energy_calc(atmvars, vavg_vecA)` | Derives `etop = FSNT − FLNT` and `ebot = FSNS − FLNS − LHFLX − SHFLX` from already-averaged values. |
+| `timeSeriesPlots(...)` | Renders matplotlib line plots for each requested variable, showing monthly, 1-year, and 10-year averages. Ice and land plotting not yet implemented. |
+| `print2text(...)` | Writes time-series data to `data/<case_id>_<firstDate>-<lastDate>_cam.txt`. Partially implemented. |
 
 ## Examples
 
-Standard archive run:
+Standard run from the archive directory, atmosphere only, starting at year 10:
 ```bash
-python trend.py $my_case_name --cam -p 100 -y 10 --plots
+python trend.py $my_case_name --cam -y 10 -p 100 --plots
 ```
-Reads `cam.h0` files from the archive directory starting at year 10, prints every 100 months, and plots at the end.
+
+Read both atmosphere and sea ice, print decadal averages every 12 months, write data files:
+```bash
+python trend.py $my_case_name --cam --cice -p 12 -a 2 --data
+```
 
 Local development with a flat test directory:
 ```bash
 python trend.py my_case --cam -p 12 --testdir /path/to/test/data --plots
 ```
-Reads files directly from `/path/to/test/data`; files must follow CAM naming conventions (`my_case.cam.h0.YYYY-MM.nc`).
+
+## Output
+
+- **Screen** — formatted table with timestep index and global mean values at the
+  interval set by `-p`. The column shown per variable is selected by `-a`.
+- **`data/`** — text files named `<case_id>_<firstDate>-<lastDate>_cam.txt`
+  (written with `--data`).
+- **`plots/`** — time-series line plots saved or displayed interactively
+  (written with `--plots`).
