@@ -43,10 +43,17 @@ def load_dataset(root_path, case_id, prefix, varnames):
     print(f"  found {len(files)} files")
 
     t0 = time.time()
-    ds = xr.open_mfdataset(files, combine='nested', concat_dim='time',
-                           data_vars='minimal', coords='minimal',
-                           compat='override', parallel=False,
-                           decode_times=False)
+    ds = xr.open_mfdataset(files,
+                           combine='nested',
+                           concat_dim='time',
+                           data_vars='minimal',
+                           coords='minimal',
+                           compat='override',
+                           parallel=False,
+                           decode_times=False,
+                           engine='scipy',
+                           chunks={'time': 12}
+                           )
     print(f"  open_mfdataset: {time.time()-t0:.1f}s")
     
     # check which requested variables actually exist
@@ -90,7 +97,7 @@ def global_mean_dataset(ds, weights):
     t2 = time.time()
     result = result.compute()
     print(f"  compute (actual I/O): {time.time()-t2:.1f}s")
-    return ds.weighted(weights_da).mean(dim=['lat', 'lon']).compute()
+    return result
 
 
 def compute_running_means(vavg_vec, int1, int2):

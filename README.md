@@ -22,7 +22,7 @@ archive directory).
 
 ```
 usage: trend.py [-h] [-y Y] [-n N] [-p P] [-a A] [--cam] [--cice] [--clm]
-                [--rundir] [--plots] [--data]
+                [--rundir] [--testdir PATH] [--plots] [--data]
                 case_id
 ```
 
@@ -45,19 +45,20 @@ usage: trend.py [-h] [-y Y] [-n N] [-p P] [-a A] [--cam] [--cice] [--clm]
 | `--cice` | Read sea ice model data |
 | `--clm` | Read land model data |
 | `--rundir` | Read files from run directory instead of archive |
+| `--testdir PATH` | Read files directly from `PATH` (local testing; no `case_id` subdirectory structure assumed) |
 | `--plots` | Do lineplots at end of sequence |
 | `--data` | Print to data file |
 
-## Example
+## Examples
 
+Standard archive run:
 ```bash
 python trend.py $my_case_name --cam -p 100 -y 10 --plots
 ```
+Reads `cam.h0` files from the archive directory starting at year 10, prints every 100 months, and plots at the end.
 
-This command:
-- Produces a time-series from the run titled `$my_case_name`
-- Reads atmosphere model files only (`cam.h0`, variables defined in `vars.in`)
-- Reads data from the archive directory
-- Starts at date `0010-01`
-- Prints to screen once every 100 model months
-- Plots data to screen
+Local development with a flat test directory:
+```bash
+python trend.py my_case --cam -p 12 --testdir /path/to/test/data --plots
+```
+Reads files directly from `/path/to/test/data`; files must follow CAM naming conventions (`my_case.cam.h0.YYYY-MM.nc`).

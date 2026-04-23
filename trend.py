@@ -1,3 +1,5 @@
+#!/usr/bin/env python  
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,6 +42,7 @@ parser.add_argument('--cam',        action='store_true', help='read atmosphere m
 parser.add_argument('--cice',       action='store_true', help='read sea ice model data')
 parser.add_argument('--clm',        action='store_true', help='read land model data')
 parser.add_argument('--rundir',     action='store_true', help='read files from run directory instead of archive')
+parser.add_argument('--testdir',    type=str, default=None, help='read files directly from this fixed directory path (for local testing)')
 parser.add_argument('--plots',      action='store_true', help='do lineplots at end of sequence')
 parser.add_argument('--data',       action='store_true', help='print to data file')
 args = parser.parse_args()
@@ -127,26 +130,25 @@ nvtotL  = len(vnamesL)
 #-----------------------------------------------------------------------------------------------------------------
 
 # Determine the root path based on CESM standard for
-# $RUNDIR and $ARCHIVEDIR
-if (read_rundir  == True):
-    ext1 = "rundir/"
-    ext2 = "/run"
-    ext3 = "/run"
-    ext4 = "/run"
+# $RUNDIR and $ARCHIVEDIR, or a flat testdir path.
+if args.testdir is not None:
+    # testdir mode: all components read from the same flat directory.
+    # Files must still follow CAM naming conventions: case_id.cam.h0.YYYY-MM.nc
+    # No case_id subdirectory structure is assumed.
+    root_atm = args.testdir
+    root_ice = args.testdir
+    root_lnd = args.testdir
+elif args.rundir:
+    root_atm = dir + "rundir/" + case_id + "/run"
+    root_ice = dir + "rundir/" + case_id + "/run"
+    root_lnd = dir + "rundir/" + case_id + "/run"
 else:
-    ext1 = "archive/"
-    ext2 = "/atm/hist"
-    ext3 = "/ice/hist"
-    ext4 = "/lnd/hist"
+    root_atm = dir + "archive/" + case_id + "/atm/hist"
+    root_ice = dir + "archive/" + case_id + "/ice/hist"
+    root_lnd = dir + "archive/" + case_id + "/lnd/hist"
 
-# set root paths
-root_atm = dir + ext1 + case_id + ext2
 root_atm = ' '.join(root_atm.split())
-
-root_ice = dir + ext1 + case_id + ext3
 root_ice = ' '.join(root_ice.split())
-
-root_lnd = dir + ext1 + case_id + ext4
 root_lnd = ' '.join(root_lnd.split())
 
 #------------------------------------------
@@ -209,7 +211,7 @@ print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 print("~~~~~~~~~~~~~~~~~ ExoCAM trend analysis ~~~~~~~~~~~~~~~~")
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 print("=== File series descriptors ===")
-print(case_id, " ", START_YEAR, " ", ext1)
+print(case_id, " ", START_YEAR, " ", root_atm)
 if do_atm == False and do_ice == False and do_lnd == False:
     print("must choose a source model; cam, cice, clm")
     quit()
