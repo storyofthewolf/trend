@@ -13,6 +13,7 @@ import netCDF4 as nc
 import glob
 import re
 import os
+from tqdm import tqdm
 
 # Module-level set to suppress duplicate missing-variable warnings
 _warned_missing = set()
@@ -87,7 +88,9 @@ def read_monthly_files(root_path, case_id, prefix, varnames,
 
     out = np.zeros((len(files), len(varnames)), dtype=float)
 
-    for i, filepath in enumerate(files):
+    for i, filepath in tqdm(enumerate(files), total=len(files), 
+                        desc="reading files", unit="file"):
+    #for i, filepath in enumerate(files):
         ncid = nc.Dataset(filepath, 'r')
         for j, vname in enumerate(varnames):
             if vname in ncid.variables:
