@@ -306,67 +306,56 @@ print("Scan complete. Timesteps found:", N_actual)
 print_timing('file scan', timing['file scan'])
 
 #-----------------------------------------------------------------------------------------------------------------
-# Load all data upfront with xarray + dask, then compute global means in one pass.
+# Read all monthly files and compute area-weighted global means.
 #
-# Assumptions verified against CAM output:
-#   - open_mfdataset sorts files by CF time coordinate; year-0001..9999 ordering is correct.
-#   - CAM, CICE, and CLM output on regular lat/lon grids use 'lat' and 'lon' dimension names.
-#   - Files exist continuously from year 1 through the end of the run, so
-#     time_offset = (START_YEAR - 1) * 12 correctly skips pre-START_YEAR months in the dataset.
-#   - vavg_vec columns match the variable index offsets used by trend_utils
-#     (atm: cols 4.., ice/lnd: cols 1..).
+# Assumptions to verify against actual model output:
+#   - All years from 1 to START_YEAR-1 have exactly 12 monthly files each, so
+#     the (START_YEAR-1)*12 offset in read_monthly_files correctly aligns with
+#     the file scan above that determined N_actual.
+#   - Variables are stored as (time, lat, lon); var[0,:,:] is correct for
+#     single-snapshot monthly files.
+#   - weights shape (nlat, nlon) matches the spatial dims of each variable.
+#   - vavg_vec columns match variable index offsets in trend_utils
+#     (atm: cols 4+, ice/lnd: cols 1+).
 #-----------------------------------------------------------------------------------------------------------------
 print("========================================")
-print("=========  loading and averaging  ======")
+print("=========  reading and averaging  ======")
 print("========================================")
 
-weights      = core.build_area_weights(lon, lat)
-time_offset  = (START_YEAR - 1) * 12   # months before START_YEAR present in the archive glob
+weights = core.build_area_weights(lon, lat)
 
 if do_atm == True:
     t0 = time.time()
-    ds_atm  = core.load_dataset(root_atm, case_id, prefixA, list(atmvars_in))
-    timing['load_dataset (atm)'] = time.time() - t0
-    print_timing('load_dataset (atm)', timing['load_dataset (atm)'])
-
-    t0 = time.time()
-    gm_atm  = core.global_mean_dataset(ds_atm, weights)
-    timing['global_mean_dataset (atm)'] = time.time() - t0
-    print_timing('global_mean_dataset (atm)', timing['global_mean_dataset (atm)'])
-
-    for n, vname in enumerate(atmvars_in):
-        if vname in gm_atm:
-            vavg_vecA[:N_actual, nv1dA + n] = gm_atm[vname].values[time_offset:time_offset + N_actual]
+    gm_atm, files_atm = core.read_monthly_files(root_atm, case_id, prefixA,
+                                                 list(atmvars_in), START_YEAR,
+                                                 N_actual, weights)
+    timing['read and average (atm)'] = time.time() - t0
+    print(f"  found {len(files_atm)} files")
+    print_timing('read and average (atm)', timing['read and average (atm)'])
+    for n in range(len(atmvars_in)):
+        vavg_vecA[:N_actual, nv1dA + n] = gm_atm[:, n]
 
 if do_ice == True:
     t0 = time.time()
-    ds_ice  = core.load_dataset(root_ice, case_id, prefixI, list(icevars_in))
-    timing['load_dataset (ice)'] = time.time() - t0
-    print_timing('load_dataset (ice)', timing['load_dataset (ice)'])
-
-    t0 = time.time()
-    gm_ice  = core.global_mean_dataset(ds_ice, weights)
-    timing['global_mean_dataset (ice)'] = time.time() - t0
-    print_timing('global_mean_dataset (ice)', timing['global_mean_dataset (ice)'])
-
-    for n, vname in enumerate(icevars_in):
-        if vname in gm_ice:
-            vavg_vecI[:N_actual, nv1dI + n] = gm_ice[vname].values[time_offset:time_offset + N_actual]
+    gm_ice, files_ice = core.read_monthly_files(root_ice, case_id, prefixI,
+                                                 list(icevars_in), START_YEAR,
+                                                 N_actual, weights)
+    timing['read and average (ice)'] = time.time() - t0
+    print(f"  found {len(files_ice)} files")
+    print_timing('read and average (ice)', timing['read and average (ice)'])
+    for n in range(len(icevars_in)):
+        vavg_vecI[:N_actual, nv1dI + n] = gm_ice[:, n]
 
 if do_lnd == True:
     t0 = time.time()
-    ds_lnd  = core.load_dataset(root_lnd, case_id, prefixL, list(lndvars_in))
-    timing['load_dataset (lnd)'] = time.time() - t0
-    print_timing('load_dataset (lnd)', timing['load_dataset (lnd)'])
-
-    t0 = time.time()
-    gm_lnd  = core.global_mean_dataset(ds_lnd, weights)
-    timing['global_mean_dataset (lnd)'] = time.time() - t0
-    print_timing('global_mean_dataset (lnd)', timing['global_mean_dataset (lnd)'])
-
-    for n, vname in enumerate(lndvars_in):
-        if vname in gm_lnd:
-            vavg_vecL[:N_actual, nv1dL + n] = gm_lnd[vname].values[time_offset:time_offset + N_actual]
+    gm_lnd, files_lnd = core.read_monthly_files(root_lnd, case_id, prefixL,
+                                                 list(lndvars_in), START_YEAR,
+                                                 N_actual, weights)
+    timing['read and average (lnd)'] = time.time() - t0
+    print(f"  found {len(files_lnd)} files")
+    print_timing('read and average (lnd)', timing['read and average (lnd)'])
+    for n in range(len(lndvars_in)):
+        vavg_vecL[:N_actual, nv1dL + n] = gm_lnd[:, n]
 
 #------------------------------------------------------
 # Energy balance for all timesteps (if requested).

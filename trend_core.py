@@ -3,15 +3,20 @@
 #
 #  Author: Wolf, E.T.
 #
-#  Core computation functions: area weights, dataset I/O,
+#  Core computation functions: area weights, netCDF4 file I/O,
 #  global means, and running statistics.
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 import numpy as np
-import xarray as xr
-import time
+import netCDF4 as nc
 import glob
+import re
+import os
+
+# Module-level set to suppress duplicate missing-variable warnings
+_warned_missing = set()
+
 
 def build_area_weights(lon, lat):
     """
@@ -37,67 +42,67 @@ def build_area_weights(lon, lat):
     return weights / weights.sum()
 
 
-def load_dataset(root_path, case_id, prefix, varnames):
-    glob_pattern = f"{root_path}/{case_id}{prefix}*.nc"
-    files = sorted(glob.glob(glob_pattern))    
-    print(f"  found {len(files)} files")
-
-    t0 = time.time()
-    ds = xr.open_mfdataset(files,
-                           combine='nested',
-                           concat_dim='time',
-                           data_vars='minimal',
-                           coords='minimal',
-                           compat='override',
-                           parallel=False,
-                           decode_times=False,
-                           engine='scipy',
-                           chunks={'time': 12}
-                           )
-    print(f"  open_mfdataset: {time.time()-t0:.1f}s")
-    
-    # check which requested variables actually exist
-    missing = [v for v in varnames if v not in ds]
-    valid   = [v for v in varnames if v in ds]
-    
-    if missing:
-        print(f"\nWARNING: the following variables in vars.in were not found in the dataset and will be skipped:")
-        for v in missing:
-            print(f"  {v}")
-    
-    if not valid:
-        print("ERROR: no valid variables found. Check vars.in against your netCDF files.")
-        sys.exit(1)
-
-    t1 = time.time()
-    print(f"  subset: {time.time()-t1:.1f}s")
-    return ds[valid]
-
-
-def global_mean_dataset(ds, weights):
+def global_mean_2d(var2d, weights):
     """
-    Compute area-weighted global mean for all variables across all timesteps.
-    Replaces -999.0 sentinel values with NaN before averaging so they are
-    excluded from the weighted sum. Triggers dask computation and returns
-    an in-memory Dataset of 1D time series (one scalar per timestep per variable).
+    Compute area-weighted global mean of a single 2D field.
+    weights is the normalized (nlat, nlon) array from build_area_weights.
+    Masked cells are excluded from both numerator and denominator.
+    Returns np.nan if the entire field is masked.
     """
+    ma = np.ma.asarray(var2d)
+    if ma.mask is np.ma.nomask:
+        return float(np.ma.average(ma, weights=weights))
+    if ma.mask.all():
+        return np.nan
+    return float(np.ma.average(ma, weights=weights))
 
-#    weights_da = xr.DataArray(weights, dims=['lat', 'lon'])
-#    ds = ds.where(ds != -999.0)
 
-    t0 = time.time()
-    weights_da = xr.DataArray(weights, dims=['lat','lon'])
-    ds = ds.where(ds != -999.0)
-    print(f"  where masking: {time.time()-t0:.1f}s")
-    
-    t1 = time.time()
-    result = ds.weighted(weights_da).mean(dim=['lat','lon'])
-    print(f"  weighted mean (lazy): {time.time()-t1:.1f}s")
-    
-    t2 = time.time()
-    result = result.compute()
-    print(f"  compute (actual I/O): {time.time()-t2:.1f}s")
-    return result
+def read_monthly_files(root_path, case_id, prefix, varnames,
+                       start_year, n_months, weights):
+    """
+    Read monthly netCDF files sequentially and compute area-weighted global
+    means for each variable at each timestep.
+
+    Files are matched by glob and filtered to YYYY-MM date stamps, then
+    sliced to start_year and n_months so the result aligns with the file
+    scan in trend.py that determined N_actual.
+
+    Returns:
+        out   -- numpy array, shape (n_months, len(varnames)), global means
+        files -- list of file paths that were actually read
+
+    Assumptions to verify against actual model output:
+      - All years from 1 to start_year-1 have exactly 12 monthly files each,
+        so start_idx = (start_year - 1) * 12 correctly skips pre-start-year files.
+      - Variables are stored as (time, lat, lon); var[0, :, :] is the single
+        monthly snapshot in each file.
+      - weights shape (nlat, nlon) matches the spatial dims of each variable.
+    """
+    date_pattern = re.compile(r'\.\d{4}-\d{2}\.nc$')
+    all_files = sorted(glob.glob(f"{root_path}/{case_id}{prefix}*.nc"))
+    all_files = [f for f in all_files if date_pattern.search(f)]
+
+    start_idx = (start_year - 1) * 12
+    files = all_files[start_idx:start_idx + n_months]
+
+    out = np.zeros((len(files), len(varnames)), dtype=float)
+
+    for i, filepath in enumerate(files):
+        ncid = nc.Dataset(filepath, 'r')
+        for j, vname in enumerate(varnames):
+            if vname in ncid.variables:
+                raw = ncid.variables[vname][0, :, :]
+                masked = np.ma.masked_equal(raw, -999.0)
+                out[i, j] = global_mean_2d(masked, weights)
+            else:
+                key = (prefix, vname)
+                if key not in _warned_missing:
+                    print(f"  WARNING: variable '{vname}' not found in {os.path.basename(filepath)}, storing NaN")
+                    _warned_missing.add(key)
+                out[i, j] = np.nan
+        ncid.close()
+
+    return out, files
 
 
 def compute_running_means(vavg_vec, int1, int2):
