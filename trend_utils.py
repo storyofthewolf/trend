@@ -305,24 +305,24 @@ def print2text(atmvars_in, lndvars_in, icevars_in, atmprint_in, lndprint_in, ice
 
     if do_atm:
         nvtotA = len(vavg_vecA[0])
-        _write_component(
-            "data/" + case_id + "_" + firstDate + "-" + lastDate + "_cam.txt",
-            time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA,
-            atmvars_in, atmprint_in, atm_vars_offset, nvtotA)
+        outfile = "data/" + case_id + "_" + firstDate + "-" + lastDate + "_cam.txt"
+        _write_component(outfile, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA,
+                         atmvars_in, atmprint_in, atm_vars_offset, nvtotA)
+        print("  Data written to {}".format(outfile))
 
     if do_ice:
         nvtotI = len(vavg_vecI[0])
-        _write_component(
-            "data/" + case_id + "_" + firstDate + "-" + lastDate + "_cice.txt",
-            time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI,
-            icevars_in, iceprint_in, ice_vars_offset, nvtotI)
+        outfile = "data/" + case_id + "_" + firstDate + "-" + lastDate + "_cice.txt"
+        _write_component(outfile, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI,
+                         icevars_in, iceprint_in, ice_vars_offset, nvtotI)
+        print("  Data written to {}".format(outfile))
 
     if do_lnd:
         nvtotL = len(vavg_vecL[0])
-        _write_component(
-            "data/" + case_id + "_" + firstDate + "-" + lastDate + "_clm.txt",
-            time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL,
-            lndvars_in, lndprint_in, ice_vars_offset, nvtotL)
+        outfile = "data/" + case_id + "_" + firstDate + "-" + lastDate + "_clm.txt"
+        _write_component(outfile, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL,
+                         lndvars_in, lndprint_in, ice_vars_offset, nvtotL)
+        print("  Data written to {}".format(outfile))
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

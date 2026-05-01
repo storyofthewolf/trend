@@ -131,15 +131,15 @@ def main():
     if not args.vars:
         parser.error('--vars is required when plotting.')
 
-    if not os.path.isdir(args.outdir):
-        sys.exit("Error: output directory '{}' does not exist.".format(args.outdir))
+    os.makedirs(args.outdir, exist_ok=True)
 
     # load all files
     cases = []
     for fp in args.files:
+        if not os.path.isfile(fp) and os.path.isfile(os.path.join('data', fp)):
+            fp = os.path.join('data', fp)
         if not os.path.isfile(fp):
             sys.exit("Error: file not found: {}\n"
-                     "Hint: run from the repo root and use paths like data/<file>.txt\n"
                      "      use --list to see available files".format(fp))
         header, months, cols = load_file(fp)
         case_id = parse_case_id(fp)

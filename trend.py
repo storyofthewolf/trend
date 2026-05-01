@@ -45,7 +45,7 @@ parser.add_argument('--rundir',     action='store_true', help='read files from r
 parser.add_argument('--testdir',    type=str, default=None, help='read files directly from this fixed directory path (for local testing)')
 parser.add_argument('--plots',      action='store_true', help='do lineplots at end of sequence')
 parser.add_argument('--show',       action='store_true', help='display plots interactively in addition to saving')
-parser.add_argument('--data',       action='store_true', help='print to data file')
+parser.add_argument('--save-data',  action='store_true', dest='save_data', help='write global mean time series to text files in data/')
 parser.add_argument('--timing',     action='store_true', help='print wall-clock timing summary at end of run')
 parser.add_argument('--int1',       type=int, default=1,  help='Short averaging window in years (default: 1)')
 parser.add_argument('--int2',       type=int, default=10, help='Long averaging window in years (default: 10)')
@@ -456,7 +456,7 @@ print("End date (year-month): ", lastDate)
 #------------------------------------------------------
 # Print data to text file
 #-------------------------------------------------------
-if args.data == True:
+if args.save_data == True:
   print('Printing to text file...')
   trend.print2text(atmvars_in, lndvars_in, icevars_in, atmprint_in, lndprint_in, iceprint_in, \
                    do_atm, vnamesA, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
