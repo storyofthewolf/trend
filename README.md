@@ -50,7 +50,8 @@ computation of TOA and surface energy balance from primary flux variables
 usage: trend.py [-h] [-y Y] [-n N] [-p P] [-a A]
                 [--cam] [--cice] [--clm]
                 [--rundir] [--testdir PATH]
-                [--plots] [--data]
+                [--plots] [--data] [--timing]
+                [--int1 INT1] [--int2 INT2]
                 case_id
 ```
 
@@ -66,7 +67,7 @@ usage: trend.py [-h] [-y Y] [-n N] [-p P] [-a A]
 |------|---------|-------------|
 | `-y Y` | 1 | Start year for the time series |
 | `-n N` | 6000 | Maximum number of months to process |
-| `-p P` | 10 | Print to screen every P months |
+| `-p P` | (none) | Print to screen every P months; omit to suppress running output |
 | `-a A` | 2 | Value shown in screen output: `0`=instantaneous monthly, `1`=1-year running mean, `2`=10-year running mean |
 | `--cam` | off | Read atmosphere model (`cam.h0`) files |
 | `--cice` | off | Read sea ice model (`cice.h`) files |
@@ -75,6 +76,9 @@ usage: trend.py [-h] [-y Y] [-n N] [-p P] [-a A]
 | `--testdir PATH` | off | Read all component files from a single flat directory (local testing); files must still follow CAM naming conventions (`case_id.cam.h0.YYYY-MM.nc`) |
 | `--plots` | off | Generate time-series line plots after processing |
 | `--data` | off | Write global mean time series to text files in `data/` |
+| `--timing` | off | Print wall-clock timing summary at end of run |
+| `--int1 INT1` | 1 | Short averaging window in years |
+| `--int2 INT2` | 10 | Long averaging window in years |
 
 At least one of `--cam`, `--cice`, or `--clm` must be specified.
 
