@@ -267,55 +267,62 @@ def print2text(atmvars_in, lndvars_in, icevars_in, atmprint_in, lndprint_in, ice
                do_lnd, vnamesL, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
                firstDate, lastDate, case_id):
 
-    a = np.where(time_vecA != 0)
-    a = np.squeeze(a)
-    na = len(a)-1
+    fmt = "{:.4f}"
 
-    if (do_atm == True):
-        outfile = "data/" + case_id +"_" + firstDate + "-" + lastDate + "_cam.txt"
-        if (do_atm == True):
-            with open(outfile,"w") as f:
-                for i in time_vecA[0:na]:
-                    i=int(i)
-                    # sort out printing variables
-                    print(i, vavg_vecA[i,4], file=f)
+    def _write_component(outfile, time_vec, vavg_vec, intavg1_vec, intavg2_vec,
+                         vars_in, print_in, offset, nvtot):
+        a  = np.where(time_vec != 0)
+        a  = np.squeeze(a)
+        na = len(a) - 1
 
+        # build ordered list of (label, col_index) pairs matching print_in order
+        cols = []
+        for var in print_in:
+            if var == 'energy':
+                cols.append(('energy_top', nvtot - 2))
+                cols.append(('energy_bot', nvtot - 1))
+            else:
+                indexr = np.where(np.array(vars_in) == var)[0]
+                if len(indexr) > 0:
+                    cols.append((var, int(indexr[0]) + offset))
 
+        with open(outfile, "w") as f:
+            # header
+            header = "month"
+            for label, _ in cols:
+                header += "  {}_native  {}_int1  {}_int2".format(label, label, label)
+            print(header, file=f)
+            # data rows
+            for i in time_vec[0:na]:
+                i = int(i)
+                row = str(i)
+                for label, xi in cols:
+                    row += "  {}  {}  {}".format(
+                        fmt.format(vavg_vec[i, xi]),
+                        fmt.format(intavg1_vec[i, xi]),
+                        fmt.format(intavg2_vec[i, xi]))
+                print(row, file=f)
 
-#if (firstCall == True):
-#            format_string = "{%s}"
-#            print("i  ", end=' ',flush=True)
-#            for x in atmprint_in:
-#                print(x, end=' ',flush=True)
-#            print()
-#
-#        # Define the desired formatting
-#
-#        format_string = "{:.3f}"
-#
-#        print(int(atmout[0]), end='  ',flush=True)
-#        N=len(atmout)
-#        for x in range(int((N-1)/3)):
-#            y=int(3*(x+1)-print_offset)
-#            print(format_string.format(atmout[y]), end='  ',flush=True)
-#        print()
-#
+    if do_atm:
+        nvtotA = len(vavg_vecA[0])
+        _write_component(
+            "data/" + case_id + "_" + firstDate + "-" + lastDate + "_cam.txt",
+            time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA,
+            atmvars_in, atmprint_in, atm_vars_offset, nvtotA)
 
+    if do_ice:
+        nvtotI = len(vavg_vecI[0])
+        _write_component(
+            "data/" + case_id + "_" + firstDate + "-" + lastDate + "_cice.txt",
+            time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI,
+            icevars_in, iceprint_in, ice_vars_offset, nvtotI)
 
-#  for var in atmprint_in:
-#            if (var != 'energy'):
-#                indexr = np.where(np.array(atmvars_in) == var)[0]
-#                if (indexr >= 0):
-#                    xi = indexr + vars_offset
-
-
-    if (do_ice == True):
-        outfile = "data/" + case_id +"_" + firstDate + "-" + lastDate + "_cice.txt"
-        if (do_ice == True):
-            with open(outfile,"w") as f:
-                for i in time_vecI[0:na]:
-                    i=int(i)
-                    print(i, vavg_vecI[i,4], file=f)
+    if do_lnd:
+        nvtotL = len(vavg_vecL[0])
+        _write_component(
+            "data/" + case_id + "_" + firstDate + "-" + lastDate + "_clm.txt",
+            time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL,
+            lndvars_in, lndprint_in, ice_vars_offset, nvtotL)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -326,15 +333,17 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                     do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
                     do_ice, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI, slope_intavg1_vecI, slope_intavg2_vecI, \
                     do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
-                    firstDate, lastDate, case_id):
+                    firstDate, lastDate, case_id, show=False):
 #!! routine is incomplete !!
 #!! needs land and ice model plotting !!
 
+    outdir = 'plots/snapshots'
+
     if (do_atm == True):
         print("Entering atmosphere model plot sequence...")
-        a   = np.where(time_vecA != 0) 
+        a   = np.where(time_vecA != 0)
         a   = np.squeeze(a)
-        na  = len(a)-1     
+        na  = len(a)-1
 
         # include everything else in a general loop
         for var in atmplot_in:
@@ -368,13 +377,17 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                     plt.ylim([y1, y2])
                     plt.title(var)
                     plt.legend()
-                    plt.show()
+                    outfile = '{}/{}_{}_{}.png'.format(outdir, case_id, var, firstDate)
+                    plt.savefig(outfile, dpi=100)
+                    if show: plt.show()
+                    plt.close()
+                    print('  saved {}'.format(outfile))
 
             # energy balance is a special case
             if (var == 'energy'):
                 x    = time_vecA[a]
                 N = len(vavg_vecA[0,:])
-                xa = N-1                
+                xa = N-1
                 var1 = vavg_vecA[a,xa]    ; var1 = np.squeeze(var1)
                 var2 = intavg1_vecA[a,xa] ; var2 = np.squeeze(var2)
                 var3 = intavg2_vecA[a,xa] ; var3 = np.squeeze(var3)
@@ -383,7 +396,7 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                 var5 = intavg1_vecA[a,xa] ; var5 = np.squeeze(var5)
                 var6 = intavg2_vecA[a,xa] ; var6 = np.squeeze(var6)
 
-                # found some cases where this isn't working properly                
+                # found some cases where this isn't working properly
                 if auto_e_bound == True:
                     bottom_arr = [var1, var2, var3, var4, var5, var6]
                     top_arr = [var1, var2, var3, var4, var5, var6]
@@ -391,7 +404,7 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                     y22 = np.maximum.reduce(top_arr)
                     y1  = np.minimum.reduce(y11)
                     y2  = np.maximum.reduce(y22)
-                else:      
+                else:
                     # set your own limits
                     y1=ey1
                     y2=ey2
@@ -408,7 +421,10 @@ def timeSeriesPlots(atmvars_in, lndvars_in, icevars_in, atmplot_in, lndplot_in, 
                 plt.ylim([y1, y2])
                 plt.title(var)
                 plt.legend()
-                plt.show()
+                outfile = '{}/{}_{}_{}.png'.format(outdir, case_id, var, firstDate)
+                plt.savefig(outfile, dpi=100)
+                plt.close()
+                print('  saved {}'.format(outfile))
 
             
 

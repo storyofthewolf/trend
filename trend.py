@@ -44,6 +44,7 @@ parser.add_argument('--clm',        action='store_true', help='read land model d
 parser.add_argument('--rundir',     action='store_true', help='read files from run directory instead of archive')
 parser.add_argument('--testdir',    type=str, default=None, help='read files directly from this fixed directory path (for local testing)')
 parser.add_argument('--plots',      action='store_true', help='do lineplots at end of sequence')
+parser.add_argument('--show',       action='store_true', help='display plots interactively in addition to saving')
 parser.add_argument('--data',       action='store_true', help='print to data file')
 parser.add_argument('--timing',     action='store_true', help='print wall-clock timing summary at end of run')
 parser.add_argument('--int1',       type=int, default=1,  help='Short averaging window in years (default: 1)')
@@ -457,8 +458,10 @@ print("End date (year-month): ", lastDate)
 #-------------------------------------------------------
 if args.data == True:
   print('Printing to text file...')
-  trend.print2text(do_atm, vnamesA, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
+  trend.print2text(atmvars_in, lndvars_in, icevars_in, atmprint_in, lndprint_in, iceprint_in, \
+                   do_atm, vnamesA, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
                    do_ice, vnamesI, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI, slope_intavg1_vecI, slope_intavg2_vecI, \
+                   do_lnd, vnamesL, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
                    firstDate, lastDate, case_id)
 
 #------------------------------------------------------
@@ -470,7 +473,7 @@ if args.plots == True:
                         do_atm, time_vecA, vavg_vecA, intavg1_vecA, intavg2_vecA, slope_intavg1_vecA, slope_intavg2_vecA, \
                         do_ice, time_vecI, vavg_vecI, intavg1_vecI, intavg2_vecI, slope_intavg1_vecI, slope_intavg2_vecI, \
                         do_lnd, time_vecL, vavg_vecL, intavg1_vecL, intavg2_vecL, slope_intavg1_vecL, slope_intavg2_vecL, \
-                        firstDate, lastDate, case_id)
+                        firstDate, lastDate, case_id, show=args.show)
 
 trend.print_final_summary(atmvars_in, icevars_in, lndvars_in,
                           do_atm, do_ice, do_lnd,
